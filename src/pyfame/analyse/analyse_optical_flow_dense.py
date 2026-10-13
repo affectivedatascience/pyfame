@@ -1,8 +1,9 @@
-from pydantic import BaseModel, ValidationError, field_validator, ValidationInfo, PositiveInt, NonNegativeInt, PositiveFloat, NonNegativeFloat
+from pydantic import BaseModel, ValidationError, field_validator, ValidationInfo, PositiveInt, NonNegativeInt, PositiveFloat, NonNegativeFloat, StrictBool
 from pyfame.landmark.facial_landmarks import *
 from pyfame.file_access import get_video_capture, get_video_writer
 from pyfame.utils.exceptions import *
 from pyfame.utils.constants import *
+from pyfame.utils.checks import check_file_paths
 from pyfame.file_access.file_access_directories import create_output_directory
 from pyfame.analyse._optical_flow_utils import draw_legend
 from pyfame.analyse.analyse_optical_flow_sparse import precompute_colour_scale
@@ -24,8 +25,9 @@ class DenseFlowAnalysisParameters(BaseModel):
     max_iterations:PositiveInt = 10
     gaussian_deviation:NonNegativeFloat = 1.2
     frame_step:PositiveInt = 5
-    precise_colour_scale:bool = True
-    display_legend:bool
+    precise_colour_scale:StrictBool = True
+    display_legend:StrictBool
+    output_viz:StrictBool
     legend_position:str="top-left"
 
     @field_validator("legend_position")
@@ -79,9 +81,10 @@ def analyse_optical_flow_dense(file_paths:pd.DataFrame, frame_step:int = 5, outp
     
     Returns
     -------
-    dict[str, pandas.Dataframe]
-        A dictionary of filename-DataFrame pairs, containing per-file
-        analysis results.
+    tuple[dict[str, pandas.Dataframe], str | None]
+        If output_visualization is false, a tuple of a dictionary containing 
+        filename-DataFrame pairs and None. If output_visualization is true, the
+        second tuple value contains a pathstring to the output videos location.
 
     Raises
     ------
@@ -96,12 +99,15 @@ def analyse_optical_flow_dense(file_paths:pd.DataFrame, frame_step:int = 5, outp
     '''
 
     # Validate and assign input parameters
+    check_file_paths(file_paths=file_paths)
+
     try:
         input_parameters = DenseFlowAnalysisParameters(
             frame_step=frame_step,
             precise_colour_scale=precise_colour_scale,
             display_legend=display_legend,
-            legend_position=legend_position
+            legend_position=legend_position,
+            output_viz=output_visualization
         )
     except ValidationError as e:
         raise ValueError(f"Invalid parameters for {analyse_optical_flow_dense.__name__}: {e}")

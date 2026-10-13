@@ -1,4 +1,4 @@
-from pydantic import BaseModel, field_validator, ValidationInfo, ValidationError, PositiveInt, NonNegativeFloat
+from pydantic import BaseModel, field_validator, ValidationInfo, ValidationError, PositiveInt, NonNegativeFloat, NonNegativeInt
 from typing import Union, Optional, List, Tuple
 from pyfame.landmark.facial_landmarks import *
 from pyfame.landmark.get_landmark_coordinates import get_relative_landmark_coordinates
@@ -51,19 +51,19 @@ class GridShuffleParameters(BaseModel):
         region in which the grid shuffle will be applied.
     """
 
-    random_seed:Optional[int]
+    random_seed:Optional[NonNegativeInt]
     shuffle_method:Union[int,str]
     grid_square_size:PositiveInt
-    grid_dimensions:Optional[tuple[int,int]]
+    grid_dimensions:Optional[tuple[PositiveInt,PositiveInt]]
     mask_overlap_threshold:NonNegativeFloat
     cyclic_shift_amount:PositiveInt
     landmark_paths:Union[List[List[Tuple[int,...]]], List[Tuple[int,...]]]
 
-    @field_validator("shuffle_method", mode="before")
+    @field_validator("shuffle_method")
     @classmethod
     def check_accepted_value(cls, value, info:ValidationInfo):
         field_name = info.field_name
-        shuffle_method_map = {27:"random", 28:"cyclic-shift", 48:"none"}
+        shuffle_method_map = {27:"random", 28:"cyclic shift", 48:"none"}
 
         if isinstance(value, str):
             value = str.lower(value)
@@ -75,8 +75,6 @@ class GridShuffleParameters(BaseModel):
             if value not in {27, 28, 48}:
                 raise ValueError(f"Unrecognized value for parameter {field_name}.")
             return shuffle_method_map.get(value)
-
-        raise TypeError(f"Invalid type for parameter {field_name}, Must be one of int or str.")
     
     @field_validator("mask_overlap_threshold")
     @classmethod
@@ -658,8 +656,8 @@ def layer_spatial_grid_shuffle(timing_configuration:TimingConfiguration | None =
     permutation method, disrupting the spatial layout of facial features
     while preserving local appearance within each grid square.
 
-    Grid geometry and the shuffle permutation are computed once from the
-    first processed frame and remain fixed for the duration of processing,
+    The grid shuffle permutation is computed once from the
+    first processed frame and remains fixed for the duration of processing,
     ensuring temporal consistency of the shuffle pattern across video
     sequences. The effective grid square size scales proportionally with
     face width per frame to accommodate changes in subject distance.

@@ -1,39 +1,87 @@
-import os
+from pathlib import Path
+import pandas as pd
 import pytest
-from pyfame.landmark import get_face_landmarker
+import shutil
 
-os.environ["PYTEST_RUNNING"] = "1"
-
-@pytest.fixture
-def valid_input_dir():
-    in_dir_valid = "tests\\data\\"
-    return in_dir_valid
+ASSETS_DIR = Path(__file__).parent / "assets"
 
 @pytest.fixture
-def invalid_input_dir():
-    in_dir_invalid = "tests\\data\\Videos\\"
-    return in_dir_invalid
+def data_paths(tmp_path: Path, monkeypatch) -> dict[str, Path]:
+    """Create a temporary PyFAME data directory structure."""
+    monkeypatch.chdir(tmp_path)
+
+    data = tmp_path / "data"
+
+    paths = {
+        "data": data,
+        "raw": data / "raw",
+        "processed": data / "processed",
+        "logs": data / "logs",
+        "analysis": data / "analysis",
+    }
+
+    for path in paths.values():
+        path.mkdir(parents=True, exist_ok=True)
+
+    return paths
 
 @pytest.fixture
-def valid_output_dir():
-    out_dir_valid = "tests\\data\\outputs"
-    return out_dir_valid
+def invalid_ext() -> Path:
+    """Return the path to a test image with an unsupported extension."""
+    return ASSETS_DIR / "invalid_ext.webp"
+
 
 @pytest.fixture
-def invalid_output_dir():
-    out_dir_invalid = "tests\\images\\masked_videos"
-    return out_dir_invalid
+def no_face_photo() -> Path:
+    """Return the path to a valid image containing no detectable face."""
+    return ASSETS_DIR / "no_face.png"
 
 @pytest.fixture
-def sample_video_path():
-    file_path = "tests\\data\\sample_video.mp4"
-    return file_path
+def no_face_video() -> Path:
+    """Return the path to a valid video containing no detectable face."""
+    return ASSETS_DIR / "no_face.mp4"
 
 @pytest.fixture
-def sample_image_path():
-    file_path = "tests\\data\\no_face.png"
-    return file_path
+def valid_face_photo() -> Path:
+    """Return the path to a valid photo containing a detectable face."""
+    return ASSETS_DIR / "valid_face.jpg"
 
 @pytest.fixture
-def face_mesh():
-    return get_face_landmarker(0.5, 0.5, False, 1)
+def valid_face_video() -> Path:
+    """Return the path to a valid photo containing a detectable face."""
+    return ASSETS_DIR / "valid_face.mp4"
+
+@pytest.fixture
+def file_paths_valid_file(valid_face_video, data_paths) -> pd.DataFrame:
+    """Creates valid dir structure and returns a valid PyFAME file_paths object."""
+    destination = data_paths["raw"] / valid_face_video.name
+    shutil.copy(valid_face_video, destination)
+
+    return pd.DataFrame(
+        {
+            "Absolute Path" : [
+                destination
+            ],
+            "Relative Path" : [
+                destination.relative_to(data_paths["data"])
+            ]
+        }
+    )
+
+@pytest.fixture
+def landmark_path():
+    """A valid single landmark path."""
+    return [
+        (0, 1),
+        (1, 2),
+        (2, 0),
+    ]
+
+
+@pytest.fixture
+def landmark_paths():
+    """A valid collection of multiple landmark paths."""
+    return [
+        [(0, 1), (1, 2), (2, 0)],
+        [(3, 4), (4, 5), (5, 3)],
+    ]

@@ -1,5 +1,6 @@
 from pyfame.file_access import get_video_capture, get_video_writer, get_imread, map_directory_structure, create_output_directory
 from pyfame.utils.exceptions import *
+from pyfame.utils.checks import *
 from pyfame.layer.timing_curves import *
 from pyfame.landmark.facial_landmarks import *
 from pyfame.layer._layer import Layer
@@ -35,7 +36,7 @@ def resolve_timing(layer:Layer, video_duration:float):
     layer.offset_t = offset
 
 def apply_layers(file_paths:pd.DataFrame, layers:list[Layer] | Layer, min_face_detection_confidence:float = 0.4, 
-                 min_face_presence_confidence:float = 0.7, min_tracking_confidence:float = 0.7):
+                 min_face_presence_confidence:float = 0.7, min_face_tracking_confidence:float = 0.7):
     """ Takes in a list of layer objects, and applies each manipulation layer in sequence frame-by-frame, and file-by-file for each file provided within input_dir.
 
     Parameters
@@ -51,7 +52,7 @@ def apply_layers(file_paths:pd.DataFrame, layers:list[Layer] | Layer, min_face_d
         A confidence parameter passed to the mediapipe FaceLandmarker instance.
         Controls how confident the landmarker needs to be that the detected face is still present, 
         if not it will attempt to re-detect the face.
-    min_tracking_confidence: float
+    min_face_tracking_confidence: float
         A confidence parameter passed to the mediapipe FaceLandmarker instance. 
         Controls how confident the facial tracking model needs to be for the landmarker to 
         continue using the current mesh layout. If this parameter fails, the landmarker will
@@ -79,45 +80,62 @@ def apply_layers(file_paths:pd.DataFrame, layers:list[Layer] | Layer, min_face_d
     timestamp = datetime.now().isoformat(timespec='seconds')
     timestamp_str = timestamp.replace(":","-")
 
-    # Ensure compatibility with Layer_Pipeline class
-    if isinstance(layers, Layer):
-        layers = [layers]
+    # Validate input params
+    check_file_paths(file_paths=file_paths)
+
+    check_type(layers, [list])
+    check_type(layers, [Layer], iterable=True)
+
+    mp_params = [min_face_detection_confidence, min_face_presence_confidence, min_face_tracking_confidence]
+    for p in mp_params:
+        check_type(p, [float])
+        check_value(p, minimum=0.0, maximum=1.0)
 
     # Extracting the i/o paths from the file_paths dataframe
     if len(file_paths["Absolute Path"]) == 0:
         raise FileReadError(message="File_paths dataframe is empty, please inspect your working folder to ensure you have populated the raw/ directory.")
-    
+
     absolute_paths = file_paths["Absolute Path"]
     relative_paths = file_paths["Relative Path"]
 
-    # Extracting the root directory name from the file paths
-    norm_path = os.path.normpath(absolute_paths.iloc[0])
-    norm_cwd = os.path.normpath(os.getcwd())
-    rel_dir_path, *_ = os.path.split(os.path.relpath(norm_path, norm_cwd))
-    parts = rel_dir_path.split(os.sep)
-    root_directory = None
+    # Determine the root data/ directory from the first file.
+    absolute_path = Path(absolute_paths.iloc[0]).resolve()
+    relative_path = Path(relative_paths.iloc[0])
 
-    if parts is not None:
-        root_directory = parts[0]
-    
-    if root_directory is None:
-        root_directory = "data"
-    
-    # Test that the directory provided actually exists in the file system before any read/writes
-    root_directory_path = os.path.join(norm_cwd, root_directory)
+    root_directory = absolute_path
 
-    if not os.path.isdir(root_directory_path):
-        raise FileReadError(message=f"Unable to locate the input {root_directory} directory. Please call make_paths() to set up the correct directory structure.")
-    if not os.path.isdir(os.path.join(root_directory_path, "raw")):
-        raise FileReadError(message=f"Unable to locate the 'raw' subdirectory under root directory '{root_directory}'. Please call make_paths() to set up the correct directory structure.")
-    if not os.path.isdir(os.path.join(root_directory_path, "processed")):
-        raise FileReadError(message=f"Unable to locate the 'processed' subdirectory under root directory '{root_directory}'. Please call make_paths() to set up the correct directory structure.")
+    for _ in relative_path.parts:
+        root_directory = root_directory.parent
 
-    # Pre-made subdirectory structure in the project root
-    input_directory = os.path.join(root_directory_path, "raw")
-    output_directory = os.path.join(root_directory_path, "processed")
-    output_directory = create_output_directory(output_directory, timestamp_str)
-    # Map any scaffoled sub-organization from the input dir to the output dir
+    # Set up input/output directories.
+    input_directory = root_directory / "raw"
+    output_directory = root_directory / "processed"
+
+    # Validate the expected PyFAME directory structure.
+    if not input_directory.is_dir():
+        raise FileReadError(
+            message=(
+                f"Unable to locate the 'raw' subdirectory under "
+                f"'{root_directory}'. Please call make_paths() to set up "
+                f"the correct directory structure."
+            )
+        )
+
+    if not output_directory.is_dir():
+        raise FileReadError(
+            message=(
+                f"Unable to locate the 'processed' subdirectory under "
+                f"'{root_directory}'. Please call make_paths() to set up "
+                f"the correct directory structure."
+            )
+        )
+
+    # Create this run's output directory.
+    output_directory = Path(
+        create_output_directory(output_directory, timestamp_str)
+    )
+
+    # Reproduce any organization beneath raw/ in processed/.
     map_directory_structure(input_directory, output_directory)
 
     # Initialize the processing pipeline
@@ -152,7 +170,7 @@ def apply_layers(file_paths:pd.DataFrame, layers:list[Layer] | Layer, min_face_d
         relative_file_path = relative_paths.iloc[i]
         
         subdirectory_names = [
-            part for part in relative_file_path.split(os.sep)
+            part for part in str(relative_file_path).split(os.sep)
             if part not in (root_directory, "raw", os.path.basename(file))
         ]
 
@@ -193,7 +211,7 @@ def apply_layers(file_paths:pd.DataFrame, layers:list[Layer] | Layer, min_face_d
             num_faces=1,
             min_face_detection_confidence=min_face_detection_confidence,
             min_face_presence_confidence=min_face_presence_confidence,
-            min_face_tracking_confidence=min_tracking_confidence,
+            min_face_tracking_confidence=min_face_tracking_confidence,
             output_face_blendshapes=True
         )
         
@@ -245,7 +263,7 @@ def apply_layers(file_paths:pd.DataFrame, layers:list[Layer] | Layer, min_face_d
         pb.close()
 
         if not log_output:
-            write_experiment_log(layers, root_directory_path)
+            write_experiment_log(layers, root_directory)
             log_output = True
     
         if not static_image_mode:

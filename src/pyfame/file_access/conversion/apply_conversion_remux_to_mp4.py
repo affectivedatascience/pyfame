@@ -1,5 +1,6 @@
 from pyfame.file_access.file_access_directories import create_output_directory
 from pyfame.utils.exceptions import FileReadError
+from pyfame.utils.checks import check_file_paths
 import os
 import pandas as pd
 import av
@@ -25,12 +26,8 @@ def apply_conversion_remux_to_mp4(file_paths:pd.DataFrame) -> None:
     None
     
     """
+    check_file_paths(file_paths=file_paths)
 
-    # Extracting the i/o paths from the file_paths dataframe
-    # Extracting the i/o paths from the file_paths dataframe
-    if len(file_paths["Absolute Path"]) == 0:
-        raise FileReadError(message="File_paths dataframe is empty, please inspect your working folder to ensure you have populated the raw/ directory.")
-    
     absolute_paths = file_paths["Absolute Path"]
 
     norm_path = os.path.normpath(absolute_paths.iloc[0])

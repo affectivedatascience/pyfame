@@ -53,9 +53,7 @@ class LandmarkOcclusionParameters(BaseModel):
         elif isinstance(value, int):
             if value not in {8,9}:
                 raise ValueError(f"Unrecognized value for parameter {field_name}.")
-            return occlusion_method_mapping.get(value)
-        
-        raise TypeError(f"Invalid type provided for {field_name}. Must be one of int or str.")   
+            return occlusion_method_mapping.get(value) 
 
 class LayerOcclusionLandmark(Layer):
     """

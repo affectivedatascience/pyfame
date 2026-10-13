@@ -1,4 +1,4 @@
-from pydantic import BaseModel, field_validator, ValidationError, ValidationInfo
+from pydantic import BaseModel, field_validator, ValidationError, ValidationInfo, Field
 from typing import Union, List, Tuple
 from pyfame.utils.constants import *
 from pyfame.layer.manipulations.mask._mask_from_landmarks import mask_from_landmarks
@@ -26,7 +26,7 @@ class MaskingParameters(BaseModel):
         fill pixels outside the masked region.
     """
 
-    landmark_paths:Union[List[List[Tuple[int,...]]], List[Tuple[int,...]]]
+    landmark_paths:Union[List[List[Tuple[int,...]]], List[Tuple[int,...]]] = Field(min_length=1)
     background_colour:Tuple[int,int,int]
 
     @field_validator("background_colour")

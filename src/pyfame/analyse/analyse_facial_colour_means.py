@@ -6,15 +6,13 @@ from pyfame.layer.manipulations.mask import mask_from_landmarks
 from pyfame.file_access import get_video_capture, create_output_directory
 from pyfame.utils.exceptions import *
 from pyfame.utils.constants import *
+from pyfame.utils.checks import check_file_paths
 import os
 import cv2 as cv
 import pandas as pd
 
 class ColourMeansParameters(BaseModel):
     colour_space:Union[str, int]
-    min_face_detection_confidence:PositiveFloat
-    min_face_presence_confidence:PositiveFloat
-    min_tracking_confidence:PositiveFloat
     frame_step:PositiveInt
 
     @field_validator("colour_space", mode="before")
@@ -22,16 +20,14 @@ class ColourMeansParameters(BaseModel):
     def check_recognized_value(cls, value, info:ValidationInfo):
         field_name = info.field_name
         value_mapping = {
-            "bgr":COLOR_SPACE_BGR, 
-            "rgb":COLOR_SPACE_BGR, 
-            "hsv":COLOR_SPACE_HSV, 
-            "greyscale":COLOUR_SPACE_GREYSCALE,
+            "rgb":COLOUR_SPACE_BGR, 
+            "hsv":COLOUR_SPACE_HSV, 
             "grayscale":COLOUR_SPACE_GREYSCALE
         }
 
         if isinstance(value, str):
             value = str.lower(value)
-            if value not in {"rgb", "bgr", "hsv", "greyscale", "grayscale"}:
+            if value not in {"rgb", "hsv", "grayscale"}:
                 raise ValueError(f"Unrecognized value for parameter {field_name}.")
             return value_mapping.get(value)
         
@@ -39,22 +35,12 @@ class ColourMeansParameters(BaseModel):
             if value not in {47, 48, 49}:
                 raise ValueError(f"Unrecognized value for parameter {field_name}.")
             return value
-        
-        raise TypeError(f"Parameter {field_name} expects int or str.")
-    
-    @field_validator("min_face_detection_confidence", "min_face_presence_confidence", "min_tracking_confidence")
-    @classmethod
-    def check_valid_range(cls, value, info:ValidationInfo):
-        field_name = info.field_name
-
-        if not (0.0 < value <= 1.0):
-            raise ValueError(f"Invalid value for parameter {field_name}. The value must lie in the range [0, 1].")
-        
-        return value
 
 def analyse_facial_colour_means(file_paths:pd.DataFrame, colour_space:int|str = COLOUR_SPACE_BGR, frame_step:int = 5) -> dict[str, pd.DataFrame]:
-    """Takes an input video file, and extracts colour channel means in the specified color space for the full-face, cheeks, nose and chin.
-    Results are returned as a filename-keyed dictionary of colour mean results; this dict can be passed to analyse_to_disk to be saved locally as a JSON file.
+    """Takes an input video file, and extracts colour channel means in the specified color 
+    space for the full-face, cheeks, nose and chin. Results are returned as a filename-keyed 
+    dictionary of colour mean results; this dict can be passed to analyse_to_disk to be 
+    saved locally as a JSON file.
 
     Parameters
     ----------
@@ -63,10 +49,12 @@ def analyse_facial_colour_means(file_paths:pd.DataFrame, colour_space:int|str = 
         A 2-column dataframe consisting of absolute and relative file paths.
     
     colour_space : int, str
-        A specifier for which color space to operate in. One of COLOR_SPACE_RGB, COLOR_SPACE_HSV or COLOR_SPACE_GRAYSCALE
+        A specifier for which color space to operate in. If passed as an integer, one of
+        COLOR_SPACE_BGR (literal `47`), COLOR_SPACE_HSV (literal `48`) or COLOR_SPACE_GRAYSCALE
+        (literal `49`). If passed as a string, one of "rgb", "hsv" or "grayscale".
     
     frame_step : int
-        The number of frames between successive colour sampling. 
+        The number of frames between successive colour samplings. 
     
         
     Returns
@@ -92,6 +80,8 @@ def analyse_facial_colour_means(file_paths:pd.DataFrame, colour_space:int|str = 
     # Global declarations and init
     static_image_mode = False
 
+    check_file_paths(file_paths)
+
     # Validate input parameters
     try:
         input_params = ColourMeansParameters(
@@ -99,7 +89,9 @@ def analyse_facial_colour_means(file_paths:pd.DataFrame, colour_space:int|str = 
             frame_step=frame_step
         )
     except ValidationError as e:
-        raise ValueError(f"Invalid parameters for {analyse_facial_colour_means.__name__}: {e}")
+        raise ValueError(
+            f"Invalid parameters for {analyse_facial_colour_means.__name__}: {e}"
+        ) from e
     
     colour_space = input_params.colour_space
     

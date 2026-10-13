@@ -2,6 +2,7 @@ from pyfame.utils.constants import *
 from pyfame.landmark import *
 from pyfame.file_access import *
 from pyfame.utils.exceptions import *
+from pyfame.utils.checks import *
 import os
 import cv2 as cv
 import numpy as np
@@ -10,21 +11,23 @@ from skimage.util import *
 import itertools
 from datetime import datetime
 
-def generate_shuffled_block_array(file_path:str, shuffle_method:int = TEMPORAL_SHUFFLE_RANDOM, rand_seed:int|None = None, block_duration:int = 1000) -> tuple:
-    """ This function takes a given file path and shuffling method, and returns a tuple containing the block_order array and the block size parameter used
-    in shuffle_frame_order(). The output of generate_shuffled_block_array can be directly fed into shuffle_frame_order as the block_order parameter.
+def generate_shuffled_block_array(file_path:str, shuffle_method:int = TEMPORAL_SHUFFLE_RANDOM, rand_seed:int|None = None, block_size:int = 30) -> tuple:
+    """ This function takes a given file path and shuffling method, and returns a tuple 
+    containing the block_order array and the block size parameter used in shuffle_frame_order(). 
+    The output of generate_shuffled_block_array can be directly fed into shuffle_frame_order as 
+    the block_order parameter.
 
     Parameters
     ----------
     file_path: str
         A path string to a video file in your current working directory tree.
     shuffle_method: int
-        An integer flag indicating the shuffling method used. For a full list of available options please see 
-        pyfame_utils.display_shuffle_method_options().
+        An integer flag indicating the shuffling method used. For a full list of 
+        available options please see pyfame_utils.display_shuffle_method_options().
     rand_seed: int | None
         A seed to numpy's random number generator.
-    block_duration: int
-        The precise time duration in milliseconds of each block of frames.
+    block_size: int
+        A positive integer representing the number of frames per block.
     
     Returns
     -------
@@ -35,10 +38,24 @@ def generate_shuffled_block_array(file_path:str, shuffle_method:int = TEMPORAL_S
 
     Raises
     ------
-    OSError: given invalid input file paths.
-    TypeError: given invalid parameter types.
-    ValueError: given unrecognized values for input parameters.
+    OSError: 
+        Given invalid input file paths.
+    TypeError: 
+        Given invalid parameter types.
+    ValueError: 
+        Given unrecognized values for input parameters.
     """ 
+
+    check_valid_path(file_path)
+    check_is_file(file_path)
+
+    check_type(shuffle_method, [int])
+    check_value(shuffle_method, TEMPORAL_SHUFFLE_METHODS)
+
+    check_type(rand_seed, [int, (type(None))])
+
+    check_type(block_size, [int])
+    check_value(block_size, minimum=2)
 
     # Initialize videocapture object
     capture = get_video_capture(file_path=file_path)
@@ -52,12 +69,11 @@ def generate_shuffled_block_array(file_path:str, shuffle_method:int = TEMPORAL_S
 
     # Retrieve relevant capture properties to compute block_size
     num_frames = capture.get(cv.CAP_PROP_FRAME_COUNT)
-    fps = capture.get(cv.CAP_PROP_FPS)
-    video_duration = (num_frames/fps) * 1000
-    num_blocks = (video_duration / block_duration)
-    block_size = int(num_frames//num_blocks)
+    # fps = capture.get(cv.CAP_PROP_FPS)
+    # video_duration = (num_frames/fps) * 1000
+    num_blocks = np.ceil(num_frames / block_size)
+    #block_size = int(num_frames//num_blocks)
 
-    num_blocks = int(np.ceil(num_blocks))
     block_order = []
 
     for i in range(num_blocks):
@@ -74,16 +90,13 @@ def generate_shuffled_block_array(file_path:str, shuffle_method:int = TEMPORAL_S
             block_order.reverse()
 
     capture.release()
-    return (block_order, block_size)
+    return block_order
 
 def apply_temporal_shuffle(file_paths:pd.DataFrame, shuffle_method:int = TEMPORAL_SHUFFLE_RANDOM, rand_seed:int|None = None, 
-                           block_duration:int = 1000, drop_last_block:bool = True) -> None:
+                           block_size:int = 30, drop_last_block:bool = True) -> None:
     """
     For each video file in file_paths, randomly shuffles the frame order by shuffling blocks of frames. 
-    Use utility function generate_shuffled_block_array() to pre-generate the block_order list. The output of 
-    generate_shuffled_block_array() can be directly passed as the value of input parameter block_order. 
-
-    Alternatively, simply specify the shuffle_method of choice and the block_duration, and shuffle_frame_order() 
+    Users specify their shuffle_method of choice and the block_size, and shuffle_frame_order() 
     will invoke generate_shuffled_block_array() internally. 
     
     Parameters
@@ -95,7 +108,7 @@ def apply_temporal_shuffle(file_paths:pd.DataFrame, shuffle_method:int = TEMPORA
         An integer flag indicating the functions running mode. For a full list of options see `TEMPORAL_SHUFFLE_METHODS`.
     rand_seed: int
         The seed number provided to the numpy random generator instance.
-    block_duration: int
+    block_size: int
         The time duration (in milliseconds) of each block of frames.
     drop_last_block: bool
         A boolean flag indicating if the uneven block of remaining frames should be dropped from the output.
@@ -188,7 +201,7 @@ def apply_temporal_shuffle(file_paths:pd.DataFrame, shuffle_method:int = TEMPORA
 
         result = get_video_writer(dir_file_path, size, video_codec=codec)
 
-        block_order, block_size = generate_shuffled_block_array(file, shuffle_method, rand_seed, block_duration)
+        block_order = generate_shuffled_block_array(file, shuffle_method, rand_seed, block_size)
         
         match shuffle_method:
             case 34 | 35 | 36:

@@ -1,4 +1,4 @@
-from pyfame.file_access.checks import *
+from pyfame.utils.checks import *
 import os
 
 def contains_sub_directories(directory_path:str) -> bool:
@@ -18,9 +18,9 @@ def contains_sub_directories(directory_path:str) -> bool:
     
     return False
     
-def create_output_directory(root_path:str, directory_name:str) -> str:
+def create_output_directory(root_path:str | Path, directory_name:str) -> str:
     # Perform parameter checks
-    check_type(root_path, [str])
+    check_type(root_path, [str, Path])
     check_valid_path(root_path)
     check_is_dir(root_path)
 
@@ -33,14 +33,14 @@ def create_output_directory(root_path:str, directory_name:str) -> str:
     # Return the newly combined path string
     return os.path.join(root_path, directory_name)
     
-def map_directory_structure(input_directory:str, output_directory:str) -> None:
+def map_directory_structure(input_directory:str | Path, output_directory:str | Path) -> None:
 
     # Type checking parameters
-    check_type(input_directory, [str])
+    check_type(input_directory, [str, Path])
     check_valid_path(input_directory)
     check_is_dir(input_directory)
 
-    check_type(output_directory, [str])
+    check_type(output_directory, [str, Path])
     check_valid_path(output_directory)
     check_is_dir(output_directory)
 

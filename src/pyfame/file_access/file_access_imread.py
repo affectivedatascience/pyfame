@@ -1,11 +1,12 @@
 import cv2 as cv
-from pyfame.file_access.checks import *
+from pyfame.utils.checks import *
 from pyfame.utils.exceptions import FileReadError
 
-def get_imread(file_path:str, flag:int = cv.IMREAD_COLOR) -> cv.typing.MatLike:
+def get_imread(file_path:str | Path, flag:int = cv.IMREAD_COLOR) -> cv.typing.MatLike:
     # Perform parameter checks
-    check_type(file_path, [str])
+    check_type(file_path, [str, Path])
     check_valid_path(file_path)
+    check_is_file(file_path)
     check_is_file(file_path)
     check_type(flag, [int])
     

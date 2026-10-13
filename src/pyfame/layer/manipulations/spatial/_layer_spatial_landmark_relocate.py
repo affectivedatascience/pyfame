@@ -4,8 +4,9 @@ from pyfame.landmark.facial_landmarks import *
 from pyfame.landmark.get_landmark_coordinates import get_relative_landmark_coordinates
 from pyfame.layer._layer import Layer, TimingConfiguration
 from pyfame.layer.manipulations.mask import mask_from_landmarks
-from pyfame.layer.manipulations.spatial.face_anchors import FaceAnchor
+from pyfame.utils.face_anchors import FaceAnchor
 from pyfame.utils.constants import *
+from pyfame.utils.general_utilities import _anchor_to_pixel
 import cv2 as cv
 import numpy as np
 from operator import itemgetter
@@ -29,7 +30,7 @@ class LandmarkRelocateSpec(BaseModel):
         The facial anchor point to which this landmark region is relocated.
         Anchors are defined in normalised face coordinates relative to the
         face center and dimensions.
-    rotatation_deg : float, default=0.0
+    rotation_deg : float, default=0.0
         The rotation angle in degrees applied to the landmark crop before
         it is cloned into its new position. Positive values rotate
         clockwise; negative values rotate counter-clockwise.
@@ -50,9 +51,9 @@ class LandmarkRelocateSpec(BaseModel):
         field_name = info.field_name
 
         if not (-1.0 <= value[0] <= 1.0):
-            raise ValidationError(f"X - {field_name} must be a normalised float in the range [-1,1].")
+            raise ValueError(f"X - {field_name} must be a normalised float in the range [-1,1].")
         if not (-1.0 <= value[1] <= 1.0):
-            raise ValidationError(f"Y - {field_name} must be a normalised float in the range [-1,1].")
+            raise ValueError(f"Y - {field_name} must be a normalised float in the range [-1,1].")
         
         return value
 
@@ -98,8 +99,20 @@ class RelocateParameters(BaseModel):
         field_name = info.field_name
 
         if not (0.0 <= value <= 1.0):
-            raise ValidationError(f"{field_name} must be a normalised float in the range [0,1].")
+            raise ValueError(f"{field_name} must be a normalised float in the range [0,1].")
         
+        return value
+
+    @field_validator("user_specs")
+    @classmethod
+    def check_spec_keys(cls, value):
+        if value is not None:
+            if not value:
+                raise ValueError("user_specs cannot be empty.")
+            
+            if value is not None and any(key not in range(4) for key in value):
+                raise ValueError("user_specs keys must be integers in the range [0, 3].")
+
         return value
 
 class LayerSpatialLandmarkRelocate(Layer):
@@ -210,11 +223,12 @@ class LayerSpatialLandmarkRelocate(Layer):
         }
         # Compute random state variables once on init
         self.rng = np.random.default_rng(self.rand_seed)
-        self.relocate_keys = [0,1,2,3]
 
         # If no user spec, generate random spec
         if self.relocate_params.user_specs is None:
+            self.relocate_keys = [0,1,2,3]
             self.relocate_params.user_specs = self._get_random_relocate_spec()
+
         else:
             self.relocate_keys = list(self.relocate_params.user_specs.keys())
 
@@ -293,40 +307,6 @@ class LayerSpatialLandmarkRelocate(Layer):
             )
         
         return specs
-    
-    @staticmethod
-    def _anchor_to_pixel(anchor, face_center, face_width, face_height):
-        """
-        Convert a normalised ``FaceAnchor`` position to absolute pixel
-        coordinates in the frame.
-
-        The anchor's normalised (x, y) value is scaled by face width and
-        face height respectively and offset from the face center to produce
-        the final pixel position.
-
-        Parameters
-        ----------
-        anchor : FaceAnchor
-            The facial anchor whose normalised position is to be converted.
-        face_center : tuple of int
-            The (x, y) pixel coordinates of the face center, computed from
-            the bounding box of the face oval landmark.
-        face_width : int
-            The pixel width of the face oval bounding box.
-        face_height : int
-            The pixel height of the face oval bounding box.
-
-        Returns
-        -------
-        px : int
-            The absolute x pixel coordinate of the anchor position.
-        py : int
-            The absolute y pixel coordinate of the anchor position.
-        """
-        ax, ay = anchor.value
-        px = int(face_center[0] + ax * face_width)
-        py = int(face_center[1] + ay * face_height)
-        return px, py
     
     def apply_layer(self, landmarker_coordinates:list[tuple[int,int]], frame:cv.typing.MatLike, dt:float) -> cv.typing.MatLike:
         """
@@ -407,12 +387,7 @@ class LayerSpatialLandmarkRelocate(Layer):
 
         masks = [le_mask, re_mask, nose_mask, lip_mask]
         screen_coords = [le_screen_coords, re_screen_coords, nose_screen_coords, lips_screen_coords]
-        landmarks = {
-            0 : {},
-            1 : {},
-            2 : {},
-            3 : {}
-        }
+        landmarks = {}
         output_frame = frame.copy()
 
         for i, (mask, coords) in enumerate(zip(masks, screen_coords)):
@@ -434,7 +409,11 @@ class LayerSpatialLandmarkRelocate(Layer):
                 cx = (cropped_lm.shape[1]) // 2
                 cy = (cropped_lm.shape[0]) // 2
 
-                landmarks[i].update({'img' : lm, 'mask' : cropped_mask, 'center' : (cx,cy)})
+                landmarks[i] = {
+                    'img' : lm, 
+                    'mask' : cropped_mask, 
+                    'center' : (cx,cy)
+                }
 
                 # ---------- Filling in cut out regions of the original frame ----------
                 # fill the original lm region in the output frame with empty pixels 
@@ -461,30 +440,29 @@ class LayerSpatialLandmarkRelocate(Layer):
         output_frame = cv.addWeighted(output_frame, 0.6, fo_only, 0.4, 0)
         
         # Cloning rotated landmarks into their new positions on the underlying face
-        for key in list(landmarks.keys()):
-            spec = self.relocate_params.user_specs.get(key)
-            if spec is not None:
-                lm = landmarks.get(key)
-                landmark = lm['img']
-                mask = lm['mask']
-                local_center = lm['center']
-                h,w = landmark.shape[:2]
+        for key, lm in landmarks.items():
+            spec = self.relocate_params.user_specs[key]
+            
+            landmark = lm['img']
+            mask = lm['mask']
+            local_center = lm['center']
+            h,w = landmark.shape[:2]
 
-                # Get pixel coordinates from facial anchor
-                cx, cy = self._anchor_to_pixel(spec.anchor, face_center, face_width, face_height)
+            # Get pixel coordinates from facial anchor
+            cx, cy = _anchor_to_pixel(spec.anchor, face_center, face_width, face_height)
 
-                # Adding normalised offsets
-                cx += int(spec.offsets[0] * face_width)
-                cy += int(spec.offsets[1] * face_height)
+            # Adding normalised offsets
+            cx += int(spec.offsets[0] * face_width)
+            cy += int(spec.offsets[1] * face_height)
 
-                rot_mat = cv.getRotationMatrix2D(center=local_center, angle=spec.rotation_deg, scale=1)
+            rot_mat = cv.getRotationMatrix2D(center=local_center, angle=spec.rotation_deg, scale=1)
 
-                # rotate landmark and mask
-                landmark = cv.warpAffine(landmark, rot_mat, (w,h))
-                mask = cv.warpAffine(mask, rot_mat, (w,h))
-                
-                # Clone the landmark onto the original face in its new position
-                output_frame = cv.seamlessClone(landmark, output_frame, mask, (cx, cy), cv.NORMAL_CLONE)
+            # rotate landmark and mask
+            landmark = cv.warpAffine(landmark, rot_mat, (w,h))
+            mask = cv.warpAffine(mask, rot_mat, (w,h))
+            
+            # Clone the landmark onto the original face in its new position
+            output_frame = cv.seamlessClone(landmark, output_frame, mask, (cx, cy), cv.NORMAL_CLONE)
 
         if self.out_greyscale:
             gray = cv.cvtColor(output_frame, cv.COLOR_BGR2GRAY)

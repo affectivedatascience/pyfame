@@ -1,4 +1,4 @@
-from pydantic import BaseModel, field_validator, ValidationInfo, ValidationError, PositiveFloat, NonNegativeInt
+from pydantic import BaseModel, field_validator, ValidationInfo, ValidationError, PositiveFloat, NonNegativeInt, StrictInt, PositiveInt
 from typing import Union, List, Tuple, Any
 from pyfame.landmark.facial_landmarks import *
 from pyfame.landmark.get_landmark_coordinates import get_relative_landmark_coordinates
@@ -64,8 +64,8 @@ class PointLightParameters(BaseModel):
     point_colour:tuple[NonNegativeInt, NonNegativeInt, NonNegativeInt]
     point_radius:int
     display_history_vectors:bool
-    history_method:Union[int,str] = SHOW_HISTORY_ORIGIN
-    history_window_msec:NonNegativeInt = 500
+    history_method:Union[StrictInt,str] = SHOW_HISTORY_ORIGIN
+    history_window_msec:PositiveInt = 500
     history_vector_colour:tuple[NonNegativeInt, NonNegativeInt, NonNegativeInt]
     maintain_background:bool
     invert_colours:bool
@@ -98,22 +98,24 @@ class PointLightParameters(BaseModel):
 
         return value
     
-    @field_validator("history_method", mode="before")
+    @field_validator("history_method")
     @classmethod
     def check_accepted_value(cls, value, info:ValidationInfo):
         field_name = info.field_name
+        value_mapping = {
+            32 : "origin",
+            33 : "relative"
+        }
 
         if isinstance(value, str):
-            if value not in {"origin", "relative"}:
+            if str.lower(value) not in {"origin", "relative"}:
                 raise ValueError(f"Unrecognized value for parameter {field_name}.")
-            return value
+            return str.lower(value)
         
         elif isinstance(value, int):
             if value not in {32, 33}:
                 raise ValueError(f"Unrecognized value for parameter {field_name}.")
-            return value
-        
-        raise TypeError(f"Invalid type for parameter {field_name}. Expected int or str.")
+            return value_mapping[value]
 
 class LayerStylisePointLight(Layer):
     """
@@ -335,7 +337,7 @@ class LayerStylisePointLight(Layer):
                 if x1 > 0 and y1 > 0:
                     cv.circle(output_img, (x1, y1), self.point_radius, self.point_colour, -1)
 
-        elif self.history_method == SHOW_HISTORY_ORIGIN:
+        elif self.history_method == "origin":
             # If show_history is true, display vector paths of all points;
             # On top of the points themselves
             for (old, new) in zip(self.prev_points, cur_points):

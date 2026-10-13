@@ -1,4 +1,4 @@
-from pydantic import BaseModel, field_validator, ValidationError, ValidationInfo, NonNegativeInt, PositiveFloat, PositiveInt
+from pydantic import BaseModel, field_validator, ValidationError, ValidationInfo, NonNegativeInt, PositiveFloat, PositiveInt, StrictBool
 from typing import Optional, List, Tuple, Any
 from pyfame.landmark.get_landmark_coordinates import get_face_landmarker, get_landmarker_coordinates
 from pyfame.landmark.facial_landmarks import *
@@ -6,6 +6,7 @@ from pyfame.layer.manipulations.mask import mask_from_landmarks
 from pyfame.file_access import get_video_capture, get_video_writer
 from pyfame.utils.exceptions import *
 from pyfame.utils.constants import *
+from pyfame.utils.checks import check_file_paths
 from pyfame.analyse._optical_flow_utils import draw_legend, draw_scaled_flow_arrows
 from pyfame.file_access.file_access_directories import create_output_directory
 import matplotlib.cm as cm
@@ -29,11 +30,31 @@ class SparseFlowAnalysisParameters(BaseModel):
     max_iterations:PositiveInt = 10
     flow_accuracy_threshold:PositiveFloat
     arrow_thickness:PositiveInt
-    legend:bool = True
+    legend:StrictBool = True
     legend_position:str = "top-left"
-    precise_colour_scale:bool = False
+    precise_colour_scale:StrictBool = False
+    output_viz:StrictBool
     stats_detail_level:str
     frame_step:PositiveInt = 1
+
+    @field_validator("landmark_idx_to_track")
+    @classmethod
+    def check_valid_mediapipe_indices(cls, value, info:ValidationInfo):
+        field_name = info.field_name
+
+        if value is not None:
+            if len(value) == 0:
+                raise ValueError(
+                    f"Parameter {field_name} cannot be an empty list."
+                )
+        
+            if max(value) > 478:
+                raise ValueError(
+                    f"Parameter {field_name} must contain only valid mediapipe " \
+                    f"FaceLandmarker indices in the range [0, 477]."
+                )
+
+        return value
 
     @field_validator("point_quality_threshold", "flow_accuracy_threshold")
     @classmethod
@@ -68,7 +89,7 @@ class SparseFlowAnalysisParameters(BaseModel):
         
         return value
     
-def precompute_colour_scale(file_path:str, ) -> tuple[float,float,Any]:
+def precompute_colour_scale(file_path:str) -> tuple[float,float,Any]:
     """ Performs a shallow pass through the input file, using the
     minimum and maximum sparse optical flow magnitudes to compute 
     the data range for the visualization colour scale.
@@ -98,7 +119,7 @@ def precompute_colour_scale(file_path:str, ) -> tuple[float,float,Any]:
         frame_step=15
     )
     print("-----------------------------------------------------------")
-
+    
     result_df = list(results.values())[0]
     mean_magnitude = result_df["magnitude"].mean()
     std_magnitude = result_df["magnitude"].std()
@@ -167,9 +188,10 @@ def analyse_optical_flow_sparse(file_paths:pd.DataFrame, landmark_idx_to_track:l
     
     Returns
     -------
-    dict[str, pandas.Dataframe]
-        A dictionary of filename-DataFrame pairs, containing per-file
-        analysis results.
+    tuple[dict[str, pandas.Dataframe], str]
+        If output_visualization is false, a tuple of a dictionary containing 
+        filename-DataFrame pairs and None. If output_visualization is true, the
+        second tuple value contains a pathstring to the output videos location.
 
     Raises
     ------
@@ -186,6 +208,8 @@ def analyse_optical_flow_sparse(file_paths:pd.DataFrame, landmark_idx_to_track:l
     """
     
     # Validate and assign input parameters
+    check_file_paths(file_paths=file_paths)
+
     try:
         input_parameters = SparseFlowAnalysisParameters(
             landmark_idx_to_track=landmark_idx_to_track, 
@@ -196,10 +220,13 @@ def analyse_optical_flow_sparse(file_paths:pd.DataFrame, landmark_idx_to_track:l
             legend_position=legend_position,
             precise_colour_scale=precise_colour_scale,
             stats_detail_level=stats_detail_level,
+            output_viz=output_visualization,
             frame_step=frame_step
         )
     except ValidationError as e:
-        raise ValueError(f"Invalid parameters for {analyse_optical_flow_sparse.__name__}: {e}")
+        raise ValueError(
+            f"Invalid parameters for {analyse_optical_flow_sparse.__name__}: {e}"
+        ) from e
     
     search_window_size = input_parameters.search_window_size
     max_pyramid_level = input_parameters.max_pyramid_level

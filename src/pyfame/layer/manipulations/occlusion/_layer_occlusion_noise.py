@@ -1,4 +1,4 @@
-from pydantic import BaseModel, field_validator, ValidationError, ValidationInfo, NonNegativeFloat, PositiveInt
+from pydantic import BaseModel, field_validator, ValidationError, ValidationInfo, NonNegativeFloat, NonNegativeInt, PositiveInt, Field
 from typing import Union, List, Tuple, Optional
 from pyfame.landmark.facial_landmarks import *
 from pyfame.layer._layer import Layer, TimingConfiguration
@@ -49,15 +49,15 @@ class NoiseParameters(BaseModel):
         region(s) in which noise will be applied.
     """
 
-    random_seed:Optional[int]
+    random_seed:Optional[NonNegativeInt]
     noise_method:Union[int,str]
-    noise_probability:NonNegativeFloat
+    noise_probability:NonNegativeFloat = Field(ge=0.0, le=1.0)
     pixel_size:PositiveInt
     gaussian_mean:float
     gaussian_deviation:NonNegativeFloat
     landmark_paths:Union[List[List[Tuple[int,...]]], List[Tuple[int,...]]]
 
-    @field_validator("noise_method", mode="before")
+    @field_validator("noise_method")
     @classmethod
     def check_compatible_value(cls, value, info:ValidationInfo):
         field_name = info.field_name
@@ -73,9 +73,7 @@ class NoiseParameters(BaseModel):
             if value not in {18,19,20}:
                 raise ValueError(f"Unrecognized value for parameter {field_name}.")
             return noise_method_mapping.get(value)
-        
-        raise TypeError(f"{field_name} provided an invalid type. Must be one of int, str.")
-    
+            
     @field_validator("pixel_size")
     @classmethod
     def check_compatible_size(cls, value, info:ValidationInfo):

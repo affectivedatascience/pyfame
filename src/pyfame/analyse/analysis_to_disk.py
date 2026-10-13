@@ -1,9 +1,31 @@
+from pydantic import BaseModel, field_validator, ValidationError, ValidationInfo, ConfigDict
+from typing import Union, Optional
 import os
 import json
 import pandas as pd
 from datetime import datetime
-from pyfame.file_access.checks import *
+from pyfame.utils.checks import *
 from pyfame.file_access.file_access_directories import create_output_directory
+
+class AnalysisToDiskParams(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    analysis_dict: dict[str, pd.DataFrame]
+    analysis_label: str
+    working_dir_path: Union[str, Path]
+    output_folder_name: Optional[str]
+
+    @field_validator("working_dir_path")
+    @classmethod
+    def validate_is_dir_path(cls, value, info:ValidationInfo):
+        field_name = info.field_name
+
+        if not Path(value).exists():
+            raise ValueError(f"{field_name} must be a valid path.")
+
+        if not Path(value).is_dir():
+            raise ValueError(f"{field_name} must be a valid path to a directory.")
+
+        return value
 
 def analysis_to_disk(analysis_dictionary:dict[str, pd.DataFrame], analysis_label:str, working_directory_path:str = os.path.join(os.getcwd(), "data"),
                      output_folder_name:str | None = None) -> None:
@@ -42,11 +64,23 @@ def analysis_to_disk(analysis_dictionary:dict[str, pd.DataFrame], analysis_label
     
     """
 
-    if not os.path.isdir(working_directory_path):
-        raise OSError(
-            message=f"Unable to locate the input {os.path.basename(working_directory_path)} directory."
-            " Please call make_output_paths() to initialise the working directory."
+    # Validate input parameters
+    try:
+        input_params = AnalysisToDiskParams(
+            analysis_dict=analysis_dictionary,
+            analysis_label=analysis_label,
+            working_dir_path=working_directory_path,
+            output_folder_name=output_folder_name
         )
+    except ValidationError as e:
+        raise ValueError(
+            f"Invalid parameters for {analysis_to_disk.__name__}: {e}"
+        ) from e
+
+    analysis_dictionary = input_params.analysis_dict
+    analysis_label = input_params.analysis_label
+    working_directory_path = input_params.working_dir_path
+    output_folder_name = input_params.output_folder_name
 
     # Get a unique folder identifier for this analysis session
     output_root = os.path.join(working_directory_path, "analysis")

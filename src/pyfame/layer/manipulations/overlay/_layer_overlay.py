@@ -11,7 +11,7 @@ from pyfame.utils.exceptions import FileReadError
 import cv2 as cv
 import numpy as np
 from pathlib import Path
-import os
+import math
 from collections import deque
 
 _OVERLAY_DIR = Path(__file__).parent / "overlay_images"
@@ -59,7 +59,7 @@ def compute_scale(landmarker_coordinates:list[dict], anchor_landmarks:tuple[int,
 
     Parameters
     ----------
-    landmarker_coordinates : list of dict
+    landmarker_coordinates : list of tuple of int
         Full list of facial landmark coordinates for the current frame.
     anchor_landmarks : tuple of int
         A pair of landmark indices whose Euclidean distance defines the
@@ -74,20 +74,12 @@ def compute_scale(landmarker_coordinates:list[dict], anchor_landmarks:tuple[int,
     float
         The scaled Euclidean distance between the two anchor landmarks.
     """
-    if scale_factor is None:
-        scale_factor = 1.0
-    
-    p1 = np.array([
-        landmarker_coordinates[anchor_landmarks[0]][0],
-        landmarker_coordinates[anchor_landmarks[0]][1]
-    ])
+    p1 = landmarker_coordinates[anchor_landmarks[0]]
+    p2 = landmarker_coordinates[anchor_landmarks[1]]
 
-    p2 = np.array([
-        landmarker_coordinates[anchor_landmarks[1]][0],
-        landmarker_coordinates[anchor_landmarks[1]][1]
-    ])
-    
-    return np.linalg.norm(p1-p2) * scale_factor
+    return math.dist(p1, p2) * (
+        1.0 if scale_factor is None else scale_factor
+    )
 
 def load_overlay(overlay_name:str, landmarker_coordinates:list[tuple[int,int]], scale_factor:float | None = None) -> tuple[cv.typing.MatLike, tuple, tuple, float]:
     """
@@ -154,8 +146,9 @@ def load_overlay(overlay_name:str, landmarker_coordinates:list[tuple[int,int]], 
         x1,y1 = landmarker_coordinates[anchor_landmarks[0]]
         x2,y2 = landmarker_coordinates[anchor_landmarks[1]]
 
-        cx = round(x2 - ((x2 - x1) / 2.0))
-        cy = round(y2 - ((y2 - y1) / 2.0))
+        cx = round((x1 + x2) / 2)
+        cy = round((y1 + y2) / 2)
+
         center_point = (cx, cy)
     
     
@@ -173,7 +166,7 @@ class OverlayParameters(BaseModel):
 
     Attributes
     ----------
-    overlay_type : str or int
+    overlay : str or int
         The overlay to apply. Accepted string values are ``"sunglasses"``,
         ``"glasses"``, ``"teardrop"``, ``"face_mask"``, and ``"pupils"``. Accepted
         integer values are ``43`` (sunglasses), ``44`` (glasses), ``45``
@@ -199,26 +192,26 @@ class OverlayParameters(BaseModel):
         typical values lie in the range [0.130, 0.300].
     """
 
-    overlay_type:Union[NonNegativeInt, str]
-    overlay_scale_factor:Optional[float] = None
+    overlay:Union[NonNegativeInt, str]
+    overlay_scale_factor:Optional[PositiveFloat] = None
     y_offset:int
     x_offset:int
     pupil_scale_factor:PositiveFloat
 
-    @field_validator("overlay_type", mode="before")
+    @field_validator("overlay")
     @classmethod
     def check_accepted_value(cls, value, info:ValidationInfo):
         field_name = info.field_name
 
         if isinstance(value, str):
-            value = str.lower(value)
-            if value in {"sunglasses", "glasses", "teardrop", "face_mask", "pupils"}:
-                return value
-            
-            elif os.path.isfile(value):
-                return value
-            
-            raise ValueError(f"Unrecognized value or invalid file path provided to parameter {field_name}.")
+            normalized = value.lower()
+
+            if normalized in {"sunglasses", "glasses", "teardrop", "face_mask", "pupils"}:
+                return normalized
+
+            raise ValueError(
+                f"Unrecognized value or invalid file path for {field_name}."
+            )
             
         elif isinstance(value, int):
             if value not in {43,44,45,46,47}:
@@ -226,8 +219,6 @@ class OverlayParameters(BaseModel):
             
             mapping = {43:"sunglasses", 44:"glasses", 45:"teardrop", 46:"face_mask", 47:"pupils"}
             return mapping.get(value)
-        
-        raise TypeError(f"Invalid type for parameter {field_name}. Expected int or str.")
     
     @field_validator("pupil_scale_factor")
     @classmethod
@@ -273,7 +264,7 @@ class LayerOverlay(Layer):
         Timing configuration used by the layer.
     overlay_params : OverlayParameters
         Overlay-specific configuration parameters.
-    overlay_type : str
+    overlay : str
         The overlay to apply (e.g. ``"sunglasses"``, ``"pupils"``).
     overlay_scale_factor : float or None
         Optional scale multiplier applied when deriving the overlay size
@@ -304,6 +295,7 @@ class LayerOverlay(Layer):
     - The ``"pupils"`` overlay is the only overlay type that supports
       continuous temporal weighting; all other overlay types operate as
       binary on/off effects.
+    - Custom overlays are planned to be added in future updates.
     """
 
     def __init__(self, timing_configuration:TimingConfiguration, overlay_parameters:OverlayParameters):
@@ -335,16 +327,17 @@ class LayerOverlay(Layer):
         super().__init__(self.time_config)
         
         # Declare class parameters
-        self.overlay_type = self.overlay_params.overlay_type
+        self.overlay = self.overlay_params.overlay
         self.overlay_scale_factor = self.overlay_params.overlay_scale_factor
         self.y_offset = self.overlay_params.y_offset
         self.x_offset = self.overlay_params.x_offset
         self.pupil_scale_factor = self.overlay_params.pupil_scale_factor
         
         # For eye related overlays
-        self.eye_blendshape_smoother = EyeBlendshapeSmoother(frame_window_size=1)
-        self.left_pupil_radius_deque = deque(maxlen=5)
-        self.right_pupil_radius_deque = deque(maxlen=5)
+        if self.overlay == "pupils":
+            self.eye_blendshape_smoother = EyeBlendshapeSmoother(frame_window_size=1)
+            self.left_pupil_radius_deque = deque(maxlen=5)
+            self.right_pupil_radius_deque = deque(maxlen=5)
 
         # Snapshot of initial state
         self._snapshot_state()
@@ -361,7 +354,7 @@ class LayerOverlay(Layer):
             weight. This return value is bypassed internally for the
             ``"pupils"`` overlay in ``apply_layer``.
         """
-        return False
+        return True if self.overlay == "pupils" else False
 
     def get_layer_parameters(self) -> dict:
         """
@@ -431,8 +424,6 @@ class LayerOverlay(Layer):
         """
         if dt is None:
             weight = 1.0
-        elif self.overlay_type == "pupils":
-            weight = super().compute_weight(dt, True)
         else:
             weight = super().compute_weight(dt, self.supports_weight())
 
@@ -440,10 +431,9 @@ class LayerOverlay(Layer):
             return frame
         
         overlayed_frame = frame.copy()
-        left_eye_open, right_eye_open = self.eye_blendshape_smoother.update(blendshapes)
-
-        if self.overlay_type == "pupils":
-
+        
+        if self.overlay == "pupils":
+            left_eye_open, right_eye_open = self.eye_blendshape_smoother.update(blendshapes)
             left_iris_arr = np.array(get_relative_landmark_coordinates(landmarker_coordinates, LANDMARK_LEFT_IRIS))
             right_iris_arr = np.array(get_relative_landmark_coordinates(landmarker_coordinates, LANDMARK_RIGHT_IRIS))
 
@@ -474,14 +464,14 @@ class LayerOverlay(Layer):
             self.right_pupil_radius_deque.append(int((right_eye_canthal_width * self.pupil_scale_factor)/2))
             left_pupil_radius = int(np.mean(self.left_pupil_radius_deque))
             right_pupil_radius = int(np.mean(self.right_pupil_radius_deque))
-            pupil_radius = int((left_pupil_radius + right_pupil_radius)/2)
+            #pupil_radius = int((left_pupil_radius + right_pupil_radius)/2)
 
             pupil_overlay = frame.copy()
 
             if left_eye_open:
                 sclera_mask = mask_from_landmarks(frame, LANDMARK_LEFT_EYE, landmarker_coordinates)
                 pupil_mask = np.zeros((frame.shape[0], frame.shape[1]), dtype=np.uint8)
-                cv.circle(pupil_mask, centroid_left_pupil, int(weight * pupil_radius), (255,255,255), -1)
+                cv.circle(pupil_mask, centroid_left_pupil, int(weight * left_pupil_radius), (255,255,255), -1)
 
                 # Overlay the pupil only where it lies in the visible sclera
                 masked_pupil = cv.bitwise_and(pupil_mask, sclera_mask)
@@ -490,7 +480,7 @@ class LayerOverlay(Layer):
             if right_eye_open:
                 sclera_mask = mask_from_landmarks(frame, LANDMARK_RIGHT_EYE, landmarker_coordinates)
                 pupil_mask = np.zeros((frame.shape[0], frame.shape[1]), dtype=np.uint8)
-                cv.circle(pupil_mask, centroid_right_pupil, int(weight * pupil_radius), (255,255,255), -1)
+                cv.circle(pupil_mask, centroid_right_pupil, int(weight * right_pupil_radius), (255,255,255), -1)
 
                 # Overlay the pupil only where it lies in the visible sclera
                 masked_pupil = cv.bitwise_and(pupil_mask, sclera_mask)
@@ -500,13 +490,13 @@ class LayerOverlay(Layer):
 
         else:
             overlay, anchor_lms, center_point, scale = load_overlay(
-                overlay_name=self.overlay_type,
+                overlay_name=self.overlay,
                 landmarker_coordinates=landmarker_coordinates,
                 scale_factor=self.overlay_scale_factor
             )
 
             # Rescaling the overlay to match 
-            scaling_factor = 1/(overlay.shape[1]/(scale))
+            scaling_factor = scale / overlay.shape[1]
             overlay = cv.resize(src=overlay, dsize=None, fx=scaling_factor, fy=scaling_factor, interpolation=cv.INTER_AREA)
 
             # Save the overlay img dimensions for later
@@ -527,13 +517,13 @@ class LayerOverlay(Layer):
             padded[pad_h:pad_h+overlay_height, pad_w:pad_w + overlay_width] = overlay
 
             # Get center point of padded overlay
-            padded_height = padded.shape[0]
-            padded_width = padded.shape[1]
-            padded_center = (padded_width//2, padded_height//2)
+            # padded_height = padded.shape[0]
+            # padded_width = padded.shape[1]
+            padded_center = (diag_size//2, diag_size//2)
 
             # Rotate the overlay to match the angle of inclination of the head
             rot_mat = cv.getRotationMatrix2D(padded_center, rotation_angle, 1)
-            overlay = cv.warpAffine(padded, rot_mat, (padded_width, padded_height), 
+            overlay = cv.warpAffine(padded, rot_mat, (diag_size, diag_size), 
                                     flags=cv.INTER_LINEAR, borderMode=cv.BORDER_CONSTANT, borderValue=(0,0,0,0))
 
             # Generate a binary mask of the overlay for addition onto original frame
@@ -541,8 +531,8 @@ class LayerOverlay(Layer):
             overlay_mask = overlay[:,:,3] / 255.0
             overlay_mask = overlay_mask[:,:,np.newaxis]
 
-            x_pos = center_point[0] - padded_width//2 + self.x_offset
-            y_pos = center_point[1] - padded_height//2 + self.y_offset
+            x_pos = center_point[0] - diag_size//2 + self.x_offset
+            y_pos = center_point[1] - diag_size//2 + self.y_offset
 
             # Clip the overlay placement to the frame boundaries
             frame_h, frame_w = frame.shape[:2]
@@ -550,8 +540,8 @@ class LayerOverlay(Layer):
             # Determine visible region in frame coordinates
             x1 = max(0, x_pos)
             y1 = max(0, y_pos)
-            x2 = min(frame_w, x_pos + padded_width)
-            y2 = min(frame_h, y_pos + padded_height)
+            x2 = min(frame_w, x_pos + diag_size)
+            y2 = min(frame_h, y_pos + diag_size)
 
             # Overlay lies completely outside the frame
             if x1 >= x2 or y1 >= y2:
@@ -586,7 +576,7 @@ class LayerOverlay(Layer):
 
         return overlayed_frame
         
-def layer_overlay(timing_configuration:TimingConfiguration | None = None, overlay_type:int|str = "sunglasses", 
+def layer_overlay(timing_configuration:TimingConfiguration | None = None, overlay:int|str = "sunglasses", 
                   overlay_scale_factor:float | None = None, y_offset:int = 10, x_offset:int = 0, pupil_scale_factor:float = 0.25) -> LayerOverlay:
     """
     Factory function for the overlay manipulation layer. `LayerOverlay`
@@ -602,7 +592,7 @@ def layer_overlay(timing_configuration:TimingConfiguration | None = None, overla
         and offset. If ``None``, a default ``TimingConfiguration`` is
         instantiated. The default instantiation assumes onset at 0.0 and
         offset at the video's duration.
-    overlay_type : str or int, default="sunglasses"
+    overlay : str or int, default="sunglasses"
         The overlay to apply. Accepted string values are ``"sunglasses"``,
         ``"glasses"``, ``"teardrop"``, ``"face_mask"``, and ``"pupils"``. 
         Accepted integer values are ``43`` (sunglasses), ``44`` (glasses), 
@@ -642,7 +632,7 @@ def layer_overlay(timing_configuration:TimingConfiguration | None = None, overla
     # Validate input parameters
     try:
         params = OverlayParameters(
-            overlay_type=overlay_type,
+            overlay=overlay,
             overlay_scale_factor=overlay_scale_factor, 
             y_offset = y_offset,
             x_offset = x_offset,

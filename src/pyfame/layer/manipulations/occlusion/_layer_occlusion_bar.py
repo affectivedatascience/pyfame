@@ -1,4 +1,4 @@
-from pydantic import BaseModel, field_validator, ValidationError, ValidationInfo, NonNegativeInt
+from pydantic import BaseModel, field_validator, ValidationError, ValidationInfo, NonNegativeInt, Field
 from typing import Tuple, List
 from pyfame.utils.general_utilities import compute_rotation_angle, compute_slope
 from pyfame.utils.constants import *
@@ -44,6 +44,20 @@ class BarOcclusionParameters(BaseModel):
     y_offset:int
     horizontal_bar_margin:int
 
+    @field_validator("landmark_paths")
+    @classmethod
+    def check_landmark_paths(cls, value):
+        if len(value) >= 2:
+            return value
+
+        if value in CONCAVE_LANDMARKS:
+            return value
+
+        raise ValueError(
+            "landmark_paths must contain at least two tuples "
+            "or be a recognized runtime landmark placeholder."
+        )
+
     @field_validator("bar_colour")
     @classmethod
     def check_in_range(cls, value, info:ValidationInfo):
@@ -51,17 +65,6 @@ class BarOcclusionParameters(BaseModel):
         for elem in value:
             if not (0 <= elem <= 255):
                 raise ValueError(f"{field_name} values must lie between 0 and 255.")
-        
-        return value
-    
-    @field_validator("landmark_paths", mode="before")
-    @classmethod
-    def check_compatible_path(cls, value, info:ValidationInfo):
-        valid_paths = [LANDMARK_LEFT_EYE_REGION, LANDMARK_RIGHT_EYE_REGION, LANDMARK_BOTH_EYE_REGIONS, LANDMARK_NOSE, LANDMARK_MOUTH]
-        field_name = info.field_name
-                
-        if value not in valid_paths:
-            raise ValueError(f"Incompatible path provided in {field_name}. Please provide one of: LANDMARK_LEFT_EYE_REGION, LANDMARK_RIGHT_EYE_REGION, LANDMARK_BOTH_EYE_REGIONS, LANDMARK_NOSE, LANDMARK_MOUTH_REGION.")
         
         return value
 

@@ -7,6 +7,8 @@ from mediapipe.tasks.python.vision.core.vision_task_running_mode import VisionTa
 import mediapipe as mp
 from pyfame.file_access.file_access_paths import get_landmarker_task_path
 from pyfame.landmark.facial_landmarks import *
+from pyfame.utils.checks import *
+from numpy import ndarray
 
 def get_face_landmarker(running_mode:str = "image", num_faces:int = 1, min_face_detection_confidence:float = 0.4, 
                         min_face_presence_confidence:float = 0.7, min_face_tracking_confidence:float = 0.7, 
@@ -56,6 +58,20 @@ def get_face_landmarker(running_mode:str = "image", num_faces:int = 1, min_face_
         Given invalid or unrecognized parameter values.
     
     """
+    check_type(running_mode, [str])
+    check_value(running_mode, ["image", "video"])
+
+    check_type(num_faces, [int])
+    check_value(num_faces, minimum=1)
+
+    mp_params = [min_face_detection_confidence, min_face_presence_confidence, min_face_tracking_confidence]
+    for p in mp_params:
+        check_type(p, [float])
+        check_value(p, minimum = 0.0, maximum = 1.0)
+
+    check_type(output_face_blendshapes, [bool])
+    check_type(output_transform_matrices, [bool])
+
     task_path = get_landmarker_task_path()
 
     match running_mode.lower():
@@ -89,7 +105,7 @@ def get_landmarker_coordinates(frame_rgb:cv.typing.MatLike, face_landmarker:Any,
 
     Parameters
     ----------
-    frame_rgb: ndarray
+    frame_rgb: ndarray | Matlike
         An RGB matrix representation of an image frame.
     
     face_landmarker: Any
@@ -123,6 +139,10 @@ def get_landmarker_coordinates(frame_rgb:cv.typing.MatLike, face_landmarker:Any,
         When the FaceLandmarker fails to detect a face
         within the provided frame.
     """
+    check_type(frame_rgb, [cv.typing.MatLike, ndarray])
+    check_type(timestamp_msec, [float])
+    check_type(static_image_mode, [bool])
+    check_type(return_blendshapes, [bool])
     
     # Save the orignal dimensions for determining padding
     original_h, original_w = frame_rgb.shape[:2]

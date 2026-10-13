@@ -2,7 +2,8 @@ from enum import Enum
 
 class FaceAnchor(Enum):
     """
-    Facial location anchors for LayerSpatialLandmarkRelocate.
+    Facial location anchors for LayerSpatialLandmarkRelocate and
+    LayerOverlay (with custom overlays only).
     Anchors are relative to the subject's face, not the user-
     perceived location.
     """

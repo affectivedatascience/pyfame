@@ -7,5 +7,5 @@ __pycache__/
 /.vscode/
 /data/
 /scripts/
-/venv311/
+/.venv/
 /build.ps1

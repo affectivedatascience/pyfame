@@ -1,4 +1,30 @@
 import numpy as np
+from pydantic import BaseModel, StrictBool, ValidationError
+
+class timing_general_params(BaseModel):
+    """
+        Configuration model defining the control parameters for 
+        manipulating the brightness of a frame or image.
+    
+        This class inherits from pydantic's `BaseModel` to provide validation and 
+        default handling of brightness parameters.
+
+        Attributes
+        ----------
+        time_delta : float
+            The current timestamp of the frame being processed within apply_layer().
+        time_start : float
+            The timestamp at which the timing function will begin activating / deactivating.
+        time_end : float
+            The timestamp at which the timing function will reach its min/max weight.
+        positive_slope : bool
+            A boolean flag indicating whether the timing function will be sloping up
+            to its maximum, or down to its minimum.
+    """
+    time_delta:float
+    time_start:float
+    time_end:float
+    positive_slope:StrictBool
 
 # Defining useful timing functions
 def timing_constant(time_delta:float, time_start:float, time_end:float, positive_slope:bool, **kwargs) -> float:
@@ -28,6 +54,20 @@ def timing_constant(time_delta:float, time_start:float, time_end:float, positive
     weight : float
         A normalised weight in the range [0.0, 1.0].
     """
+    try:
+        params = timing_general_params(
+            time_delta=time_delta,
+            time_start=time_start,
+            time_end=time_end,
+            positive_slope=positive_slope
+        )
+    except ValidationError as e:
+        raise ValueError(f"Parameter validation failed. Reason: {e}.") from e
+
+    time_delta = params.time_delta
+    time_start = params.time_start
+    time_end = params.time_end
+    positive_slope = params.positive_slope
 
     if time_start <= time_delta <= time_end:
         return 1.0
@@ -61,6 +101,21 @@ def timing_linear(time_delta:float, time_start:float, time_end:float, positive_s
     weight : float
         A normalised weight in the range [0.0, 1.0].
     """
+
+    try:
+        params = timing_general_params(
+            time_delta=time_delta,
+            time_start=time_start,
+            time_end=time_end,
+            positive_slope=positive_slope
+        )
+    except ValidationError as e:
+        raise ValueError(f"Parameter validation failed. Reason: {e}.") from e
+
+    time_delta = params.time_delta
+    time_start = params.time_start
+    time_end = params.time_end
+    positive_slope = params.positive_slope
     
     duration = time_end - time_start
 
@@ -111,6 +166,21 @@ def timing_sigmoid(time_delta:float, time_start:float, time_end:float, positive_
     weight : float
         A normalised weight in the range [0.0, 1.0].
     """
+
+    try:
+        params = timing_general_params(
+            time_delta=time_delta,
+            time_start=time_start,
+            time_end=time_end,
+            positive_slope=positive_slope
+        )
+    except ValidationError as e:
+        raise ValueError(f"Parameter validation failed. Reason: {e}.") from e
+
+    time_delta = params.time_delta
+    time_start = params.time_start
+    time_end = params.time_end
+    positive_slope = params.positive_slope
 
     def scaled_sigmoid(t, k):
         raw = 1 / (1 + np.exp(-k * (t-0.5)))
@@ -171,6 +241,21 @@ def timing_gaussian(time_delta:float, time_start:float, time_end:float, positive
     weight : float
         A normalised weight in the range [0.0, 1.0].
     """
+    try:
+        params = timing_general_params(
+            time_delta=time_delta,
+            time_start=time_start,
+            time_end=time_end,
+            positive_slope=positive_slope
+        )
+    except ValidationError as e:
+        raise ValueError(f"Parameter validation failed. Reason: {e}.") from e
+
+    time_delta = params.time_delta
+    time_start = params.time_start
+    time_end = params.time_end
+    positive_slope = params.positive_slope
+
     def half_gaussian(x, sigma, positive):
         if positive:
             # map to left half of distribution

@@ -115,3 +115,36 @@ def display_landmarks_face_overlay(frame, landmarker_coordinates, point_radius:i
     """
     for (x, y) in landmarker_coordinates:
         cv.circle(frame, (x,y), point_radius, (0, 0, 255), -1)
+
+def _anchor_to_pixel(anchor, face_center, face_width, face_height):
+    """
+    Convert a normalised ``FaceAnchor`` position to absolute pixel
+    coordinates in the frame.
+
+    The anchor's normalised (x, y) value is scaled by face width and
+    face height respectively and offset from the face center to produce
+    the final pixel position.
+
+    Parameters
+    ----------
+    anchor : FaceAnchor
+        The facial anchor whose normalised position is to be converted.
+    face_center : tuple of int
+        The (x, y) pixel coordinates of the face center, computed from
+        the bounding box of the face oval landmark.
+    face_width : int
+        The pixel width of the face oval bounding box.
+    face_height : int
+        The pixel height of the face oval bounding box.
+
+    Returns
+    -------
+    px : int
+        The absolute x pixel coordinate of the anchor position.
+    py : int
+        The absolute y pixel coordinate of the anchor position.
+    """
+    ax, ay = anchor.value
+    px = int(face_center[0] + ax * face_width)
+    py = int(face_center[1] + ay * face_height)
+    return px, py

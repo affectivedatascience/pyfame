@@ -266,8 +266,9 @@ def layer_colour_brightness(timing_configuration:TimingConfiguration | None = No
     magnitude : float, default=20.0
         The degree by which to increase or decrease the brightness.
         Used as an additive factor to increase the global intensity of a frame
-        or image. Accepts values in the range [-25.0, 25.0]. Magnitudes outside
-        of this range tend to cause artifacts in the resulting image.
+        or image. Values in the range [-25.0, 25.0] provide optimal brightening /
+        darkening. Magnitudes outside of this range tend to cause artifacts in the 
+        resulting image.
     brightness_scale : str
         The method by which the brightness is scaled. `relative` indicates
         the scaled brightness range begins relative to the provided image or 
@@ -293,7 +294,7 @@ def layer_colour_brightness(timing_configuration:TimingConfiguration | None = No
         params = BrightnessParameters(
             landmark_paths=landmark_paths, 
             magnitude=magnitude,
-            brightness_mode=brightness_scale
+            brightness_scale=brightness_scale
         )
     except ValidationError as e:
         raise ValueError(f"Invalid parameters for {LayerColourBrightness.__name__}: {e}")

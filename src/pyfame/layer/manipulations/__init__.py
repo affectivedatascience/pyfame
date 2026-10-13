@@ -34,7 +34,6 @@ _primary_api = [
     "layer_overlay",
     "layer_spatial_grid_shuffle", 
     "layer_spatial_landmark_relocate", 
-    "FaceAnchor", 
     "LandmarkRelocateSpec",
     "layer_stylise_point_light",
     "layer_stylise_pencil_sketch",

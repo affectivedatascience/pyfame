@@ -35,25 +35,32 @@ class BlurringParameters(BaseModel):
     max_kernel_size:PositiveInt
     landmark_paths:Union[List[List[Tuple[int,...]]], List[Tuple[int,...]]]
 
-    @field_validator("blur_method", mode="before")
+    @field_validator("blur_method")
     @classmethod
-    def check_compatible_value(cls, value, info:ValidationInfo):
-        field_name = info.field_name
-        blur_method_mapping = {11:"average", 12:"gaussian", 13:"median"}
+    def check_compatible_value(cls, value, info: ValidationInfo):
+        blur_method_mapping = {
+            11: "average",
+            12: "gaussian",
+            13: "median",
+        }
 
         if isinstance(value, str):
-            value = str.lower(value)
-            if value not in {"average", "gaussian", "median"}:
-                raise ValueError(f"Unrecognized value for parameter {field_name}.")
-            return value
-        
-        elif isinstance(value, int):
-            if value not in {11, 12, 13}:
-                raise ValueError(f"Unrecognized value for parameter {field_name}.")
-            return blur_method_mapping.get(value)
-        
-        raise TypeError(f"{field_name} provided an invalid type. Must be one of int, str.")
+            value = value.lower()
 
+            if value not in {"average", "gaussian", "median"}:
+                raise ValueError(
+                    f"Unrecognized value for parameter {info.field_name}."
+                )
+
+            return value
+
+        if value not in blur_method_mapping:
+            raise ValueError(
+                f"Unrecognized value for parameter {info.field_name}."
+            )
+
+        return blur_method_mapping[value]
+        
     @field_validator("max_kernel_size")
     @classmethod
     def check_odd_dims(cls, value, info:ValidationInfo):
@@ -61,7 +68,7 @@ class BlurringParameters(BaseModel):
 
         # Ensures kernel size provided is odd and greater or equal to (3,3)
         if not (value % 2 == 1 and value >= 3 and value <= 31):
-            raise ValueError(f"{field_name} must be odd and >= 3.")
+            raise ValueError(f"{field_name} must be odd integer between 3 and 31.")
         
         return value
 
@@ -301,7 +308,7 @@ def layer_occlusion_blur(timing_configuration:TimingConfiguration | None = None,
     landmark_paths : list of list of tuple of int or list of tuple of int, default=LANDMARK_FACE_OVAL
         A list of one or more closed landmark paths representing the
         region in which the blur will be applied.
-    max_kernel_size : int, default=28
+    max_kernel_size : int, default=29
         The maximum blur kernel size, reached at full temporal weight.
         Must be a positive odd integer in the range [3, 31].
 

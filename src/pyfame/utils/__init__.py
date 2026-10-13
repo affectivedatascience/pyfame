@@ -4,6 +4,7 @@ from .constants import *
 import pyfame.utils.constants as constants
 from .exceptions import *
 import pyfame.utils.exceptions as exceptions
+from .face_anchors import FaceAnchor
 
 __all__ = [
     "get_variable_name", 
@@ -11,6 +12,7 @@ __all__ = [
     "get_landmark_names", 
     "display_landmarks_face_overlay", 
     "compute_slope",
+    "FaceAnchor",
     "constants",
     "exceptions"
 ]

@@ -21,7 +21,6 @@ src/pyfame/data/sample/02/sample_03.mp4
 src/pyfame/data/sample/02/sample_04.mp4
 src/pyfame/data/sample/license/LICENSE-RAVDESS.txt
 src/pyfame/file_access/__init__.py
-src/pyfame/file_access/checks.py
 src/pyfame/file_access/file_access_directories.py
 src/pyfame/file_access/file_access_imread.py
 src/pyfame/file_access/file_access_paths.py
@@ -73,6 +72,7 @@ src/pyfame/logging/write_experiment_log.py
 src/pyfame/models/mediapipe/face_landmarker.task
 src/pyfame/schema/manipulation_log.v1.schema.json
 src/pyfame/utils/__init__.py
+src/pyfame/utils/checks.py
 src/pyfame/utils/constants.py
 src/pyfame/utils/exceptions.py
 src/pyfame/utils/general_utilities.py

@@ -270,8 +270,10 @@ def layer_colour_saturation(timing_configuration:TimingConfiguration|None = None
         region in which the manipulation will be applied.
     magnitude : float, default=-12.0
         The degree by which to increase or decrease the saturation.
-        Must lie in the range [-25.0, 25.0]. Positive values increase
-        colour vividness; negative values shift the region toward greyscale.
+        Values in the range [-25.0, 25.0] provide optimal brightening /
+        darkening. Magnitudes outside of this range tend to cause artifacts in the 
+        resulting image. Positive values increase colour vividness; negative values 
+        shift the region toward greyscale.
     saturation_scale : str
             The method by which the saturation is scaled. `relative` indicates
             the scaled saturation range begins relative to the provided image or 

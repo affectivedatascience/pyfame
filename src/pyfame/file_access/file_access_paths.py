@@ -1,12 +1,12 @@
 import os
 import pandas as pd
-from pyfame.file_access.checks import *
+from pyfame.utils.checks import *
 from pathlib import Path
 from importlib import resources
 import shutil
 import warnings
 
-def make_paths(root_folder:str = None):
+def make_paths(root_folder:str | Path = None):
     """ If the top level "data/" folder is not yet set up, this function will
     create the "data/" folder along with the subfolders "raw", "processed/", "logs/",
     "conversion/" and "analysis". 
@@ -18,7 +18,7 @@ def make_paths(root_folder:str = None):
 
     Parameters
     ----------
-    root_folder : str
+    root_folder : str | Path
         An optional existing directory where all of the projects
         data will be stored. By default this is None and this method 
         will create a new "data/" folder at the project root.
@@ -41,9 +41,8 @@ def make_paths(root_folder:str = None):
 
     if root_folder is not None:
         # If a root_path is provided, check that it is a valid path that exists in the CWD.
-        check_type(root_folder, [str])
+        check_type(root_folder, [str, Path])
         check_valid_path(root_folder)
-        check_is_dir(root_folder)
     else:
         # If no root_path is provided, the data/ folder will become the root for all of Pyfame's i/o.
         root_folder = os.path.join(os.getcwd(), "data")
@@ -88,6 +87,9 @@ def load_user_data(data_folder_name:str = "data", include_folders:list[str] = ["
     OSError
         Given invalid folder names.
     """
+    check_type(data_folder_name, [str])
+    check_type(include_folders, [str], iterable=True)
+
     if not os.path.exists(Path(os.getcwd(), data_folder_name)):
         raise OSError(f"Folder {data_folder_name} does not exist or cannot be found in the cwd.")
     data_path = Path(os.getcwd(), data_folder_name)
@@ -146,6 +148,8 @@ def load_sample_data(data_folder_name:str = "data") -> pd.DataFrame:
     OSError
         Given invalid folder names.
     """
+    check_type(data_folder_name, [str])
+
     cwd = Path.cwd()
     data_path = cwd / data_folder_name
 
@@ -184,7 +188,7 @@ def load_sample_data(data_folder_name:str = "data") -> pd.DataFrame:
 
     return df1
 
-def get_directory_walk(input_directory:str) -> pd.DataFrame:
+def get_directory_walk(input_directory:str | Path) -> pd.DataFrame:
         full_file_paths = []
         rel_file_paths = []
 
@@ -204,7 +208,7 @@ def get_directory_walk(input_directory:str) -> pd.DataFrame:
 
         return df1
 
-def get_sub_directories_relative_to_path(file_path:str, anchor_directory:str) -> Path:
+def get_sub_directories_relative_to_path(file_path:str | Path, anchor_directory:str) -> Path:
     path = Path(file_path).resolve()
 
     try:

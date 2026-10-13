@@ -49,10 +49,10 @@ class RecolourParameters(BaseModel):
         field_name = info.field_name
         if isinstance(value, int):
             if value not in SHIFT_COLOUR_OPTIONS:
-                raise ValidationError(f"{field_name} has been provided an unrecognized value.")
+                raise ValueError(f"{field_name} has been provided an unrecognized value.")
         elif isinstance(value, str):
             if value.lower() not in {"red", "green", "blue", "yellow"}:
-                raise ValidationError(f"{field_name} has been provided an unrecognized value.")
+                raise ValueError(f"{field_name} has been provided an unrecognized value.")
         
         return value
 

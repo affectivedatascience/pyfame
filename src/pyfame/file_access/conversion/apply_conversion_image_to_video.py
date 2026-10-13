@@ -1,5 +1,5 @@
 from pyfame.utils.exceptions import *
-from pyfame.file_access.checks import *
+from pyfame.utils.checks import *
 from pyfame.utils.constants import *
 from pyfame.file_access import create_output_directory, get_video_writer, get_directory_walk
 import numpy as np
@@ -17,7 +17,7 @@ def standardise_image_dimensions(input_directory:str, method:int|str = STANDARDI
     input_directory: str
         A path string to a directory containing static images to be equalized.
 
-    method: int
+    method: int or str
         An integer flag specifying the equalization method to use; one of STANDARDIZE_DIMS_CROP or STANDARDIZE_DIMS_PAD.
     
     pad_colour: tuple of int
@@ -225,19 +225,20 @@ def apply_conversion_image_to_video(file_paths:pd.DataFrame, output_filename:str
     None
     
     """
+    check_file_paths(file_paths=file_paths)
 
     check_type(output_filename, [str])
 
     check_type(frame_rate, [int])
-    check_value(frame_rate, min=1, max=120) 
+    check_value(frame_rate, minimum=1, maximum=120) 
 
     check_type(repeat_duration_msec, [int])
-    check_value(repeat_duration_msec, min=100)
+    check_value(repeat_duration_msec, minimum=100)
 
     check_type(blend_transition, [bool])
     
     check_type(blended_frames_proportion, [float])
-    check_value(blended_frames_proportion, min=0.0, max=1.0)
+    check_value(blended_frames_proportion, minimum=0.0, maximum=1.0)
 
     # Extracting the i/o paths from the file_paths dataframe
     absolute_paths = file_paths["Absolute Path"]
