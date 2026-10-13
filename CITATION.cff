@@ -1,0 +1,13 @@
+cff-version: "1.2.0"
+type: software
+message: "If you use PyFAME in your research, please cite this software using the metadata below."
+title: "PyFAME: the Python Facial Analysis and Manipulation Environment"
+authors:
+  - family-names: Bosman
+    given-names: Gavin
+    oricd: "https://orcid.org/0009-0004-3349-0322"
+  - family-names: Livingstone
+    given-names: Steven R.
+    orcid: "https://orcid.org/0000-0002-6364-6410"
+repository-code: "https://github.com/affectivedatascience/pyfame"
+url: "https://affectivedatascience.github.io/pyfame/"
