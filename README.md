@@ -1,5 +1,5 @@
 ![Docs](https://github.com/Gavin-Bosman/PyFAME/actions/workflows/deploy.yml/badge.svg)
-![PyPI Version](https://img.shields.io/pypi/v/Pyfame)
+![PyPI Version](https://img.shields.io/pypi/v/pyfame?pypiBaseUrl=https%3A%2F%2Fpypi.org&link=https%3A%2F%2Fpypi.org%2Fproject%2Fpyfame%2F)
 [![PyPI Downloads](https://static.pepy.tech/personalized-badge/pyfame?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/pyfame)
 
 # PyFAME: the Python Facial Analysis and Manipulation Environment
