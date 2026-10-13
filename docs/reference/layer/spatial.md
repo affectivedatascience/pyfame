@@ -16,8 +16,3 @@ Landmark-based and grid based relocation of the facial features.
         - layer_spatial_landmark_relocate
 
 ---
-
-::: pyfame.layer.manipulations.spatial.face_anchors
-    options:
-      members:
-        - FaceAnchor

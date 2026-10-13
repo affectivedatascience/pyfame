@@ -1,8 +1,7 @@
 # API Reference
 
-PyFAME's API is broken down into several submodules containing core features
-(analyse, file_access, landmark, layer) and helpful utilities (logging, utils). Use the
-quick access links below or the side bar to navigate to a specific submodule:
+PyFAME's is broken down into seven submodules containing core features
+(analyse, file_access, landmark, layer, timing) and helpful utilities (logging, utils).
 
 <div class="grid cards" markdown>
 

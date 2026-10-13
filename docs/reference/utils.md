@@ -17,6 +17,11 @@ PyFAME comes equiped with a variety of utility functions that provide convenienc
         - compute_rotation_angle
         - display_landmarks_face_overlay
 
+::: pyfame.utils.face_anchors
+    options:
+      members:
+        - FaceAnchor
+
 ---
 
 ## Custom Exceptions
