@@ -1,5 +1,5 @@
 ![Docs](https://github.com/Gavin-Bosman/PyFAME/actions/workflows/deploy.yml/badge.svg)
-![PyPI Version](https://img.shields.io/pypi/v/pyfame?pypiBaseUrl=https%3A%2F%2Fpypi.org&link=https%3A%2F%2Fpypi.org%2Fproject%2Fpyfame%2F)
+[![PyPI Version](https://img.shields.io/pypi/v/pyfame)](https://pypi.org/project/pyfame/)
 [![PyPI Downloads](https://static.pepy.tech/personalized-badge/pyfame?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/pyfame)
 
 # PyFAME: the Python Facial Analysis and Manipulation Environment
@@ -7,8 +7,7 @@
 
 PyFAME is a python package for dynamic region occlusion and skin colour modification of faces in video and images. Provides a range of tools for changing the colour of user-specified facial regions using industry-standard colour spaces (L*a*b, HSV, BGR), occlusion of user-defined facial regions (e.g., eyes, nose, mouth, hemi-face), and isolation of the head from background scene through video matting. Facial modifications can be further transitioned on and off through a range of timing functions (e.g., linear, sigmoid, Gaussian etc).
 
-PyFAME leverages the powerful Face Mesh solution from MediaPipe, which provides automated detection of 478 unique facial landmarks. By accessing the x-y pixel coordinates of these landmarks, many complex image and video manipulations can be performed. 
-For more on mediapipe, see [here](https://ai.google.dev/edge/mediapipe/solutions/guide)
+PyFAME leverages the powerful Face Mesh solution from MediaPipe, which provides automated detection of 478 unique facial landmarks. By accessing the x-y pixel coordinates of these landmarks, many complex image and video manipulations can be performed.
 
 Here is an example of PyFAME performing pixel-level modifications to create new videos from the original one:
 
