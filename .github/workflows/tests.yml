@@ -30,13 +30,35 @@ jobs:
       - name: Install Linux system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgles2
+          sudo apt-get install -y libgles2 libegl1
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e .
           python -m pip install pytest
+      
+      - name: Verify MediaPipe shared libraries
+        run: |
+          python - <<'PY'
+          import mediapipe
+          from pathlib import Path
+          import subprocess
+
+          library = Path(mediapipe.__file__).parent / "tasks" / "c" / "libmediapipe.so"
+
+          result = subprocess.run(
+              ["ldd", str(library)],
+              capture_output=True,
+              text=True,
+              check=True
+          )
+
+          print(result.stdout)
+
+          if "not found" in result.stdout:
+              raise RuntimeError("MediaPipe has missing Linux dependencies.")
+          PY
 
       - name: Run tests
         run: python -m pytest -q
