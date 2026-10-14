@@ -148,11 +148,6 @@ def apply_temporal_shuffle(file_paths:pd.DataFrame, shuffle_method:int = TEMPORA
     input_directory = root_directory / "raw"
     output_directory = root_directory / "processed"
 
-    print(f"root dir : {root_directory}")
-    print(f"input dir : {input_directory}")
-    print(f"output dir : {output_directory}")
-    print(f"data dir exists : {Path(root_directory / "data").exists()}")
-
     # Validate the expected PyFAME directory structure.
     if not input_directory.is_dir():
         raise FileReadError(

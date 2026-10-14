@@ -5,8 +5,7 @@ PyFAME comes equiped with a variety of utility functions that provide convenienc
 ::: pyfame.layer.manipulations.temporal.apply_temporal_frame_shuffle
     options:
       members:
-        - generate_shuffled_block_array
-        - apply_temporal_frame_shuffle
+        - apply_temporal_shuffle
 
 ---
 
@@ -16,6 +15,8 @@ PyFAME comes equiped with a variety of utility functions that provide convenienc
         - get_variable_name
         - compute_rotation_angle
         - display_landmarks_face_overlay
+
+---
 
 ::: pyfame.utils.face_anchors
     options:
