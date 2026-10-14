@@ -45,7 +45,7 @@ def test_analyse_optical_flow_sparse_file_paths_invalid_columns(cols):
         ("legend_position", 2.0),
         ("precise_colour_scale", "test"),
         ("stats_detail_level", 2.0),
-        ("frame_step", "test")
+        ("frame_step", "test"),
         ("output_visualization", "test")
     ]
 )

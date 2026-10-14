@@ -12,6 +12,7 @@ __all__ = [
     "get_landmark_names", 
     "display_landmarks_face_overlay", 
     "compute_slope",
+    "_anchor_to_pixel"
     "FaceAnchor",
     "constants",
     "exceptions"

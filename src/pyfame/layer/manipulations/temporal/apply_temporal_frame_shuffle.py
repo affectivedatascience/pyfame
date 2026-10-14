@@ -46,17 +46,6 @@ def generate_shuffled_block_array(file_path:str, shuffle_method:int = TEMPORAL_S
         Given unrecognized values for input parameters.
     """ 
 
-    check_valid_path(file_path)
-    check_is_file(file_path)
-
-    check_type(shuffle_method, [int])
-    check_value(shuffle_method, TEMPORAL_SHUFFLE_METHODS)
-
-    check_type(rand_seed, [int, (type(None))])
-
-    check_type(block_size, [int])
-    check_value(block_size, minimum=2)
-
     # Initialize videocapture object
     capture = get_video_capture(file_path=file_path)
     
@@ -71,7 +60,7 @@ def generate_shuffled_block_array(file_path:str, shuffle_method:int = TEMPORAL_S
     num_frames = capture.get(cv.CAP_PROP_FRAME_COUNT)
     # fps = capture.get(cv.CAP_PROP_FPS)
     # video_duration = (num_frames/fps) * 1000
-    num_blocks = np.ceil(num_frames / block_size)
+    num_blocks = int(np.ceil(num_frames / block_size))
     #block_size = int(num_frames//num_blocks)
 
     block_order = []
@@ -109,7 +98,7 @@ def apply_temporal_shuffle(file_paths:pd.DataFrame, shuffle_method:int = TEMPORA
     rand_seed: int
         The seed number provided to the numpy random generator instance.
     block_size: int
-        The time duration (in milliseconds) of each block of frames.
+        The number of frames within each temporal block (min = 2).
     drop_last_block: bool
         A boolean flag indicating if the uneven block of remaining frames should be dropped from the output.
     
@@ -127,6 +116,14 @@ def apply_temporal_shuffle(file_paths:pd.DataFrame, shuffle_method:int = TEMPORA
         Given unknown or invalid video containers.
     """
 
+    check_file_paths(file_paths)
+    check_type(shuffle_method, [int])
+    check_value(shuffle_method, TEMPORAL_SHUFFLE_METHODS)
+    check_type(rand_seed, [int, (type(None))])
+    check_type(block_size, [int])
+    check_value(block_size, minimum=2)
+    check_type(drop_last_block, [bool])
+
     # Get the current sys timestamp for a unique output folder
     # name that will identify the processing session
     timestamp = datetime.now().isoformat(timespec='seconds')
@@ -135,37 +132,50 @@ def apply_temporal_shuffle(file_paths:pd.DataFrame, shuffle_method:int = TEMPORA
     # Extracting the i/o paths from the file_paths dataframe
     if len(file_paths["Absolute Path"]) == 0:
         raise FileReadError(message="File_paths dataframe is empty, please inspect your working folder to ensure you have populated the raw/ directory.")
-    
+
     absolute_paths = file_paths["Absolute Path"]
     relative_paths = file_paths["Relative Path"]
 
-    # Extracting the root directory name from the file paths
-    norm_path = os.path.normpath(absolute_paths.iloc[0])
-    norm_cwd = os.path.normpath(os.getcwd())
-    rel_dir_path, *_ = os.path.split(os.path.relpath(norm_path, norm_cwd))
-    parts = rel_dir_path.split(os.sep)
-    root_directory = None
+    absolute_path = Path(absolute_paths.iloc[0]).resolve()
+    relative_path = Path(relative_paths.iloc[0])
 
-    if parts is not None:
-        root_directory = parts[0]
-    
-    if root_directory is None:
-        root_directory = "data"
-    
-    # Test that the directory provided actually exists in the file system before any read/writes
-    root_directory_path = os.path.join(norm_cwd, root_directory)
+    root_directory = absolute_path
 
-    if not os.path.isdir(root_directory_path):
-        raise FileReadError(message=f"Unable to locate the input {root_directory} directory. Please call make_paths() to set up the correct directory structure.")
-    if not os.path.isdir(os.path.join(root_directory_path, "raw")):
-        raise FileReadError(message=f"Unable to locate the 'raw' subdirectory under root directory '{root_directory}'. Please call make_paths() to set up the correct directory structure.")
-    if not os.path.isdir(os.path.join(root_directory_path, "processed")):
-        raise FileReadError(message=f"Unable to locate the 'processed' subdirectory under root directory '{root_directory}'. Please call make_paths() to set up the correct directory structure.")
-    
-    # Pre-made subdirectory structure in the project root
-    input_directory = os.path.join(root_directory_path, "raw")
-    output_directory = os.path.join(root_directory_path, "processed")
-    output_directory = create_output_directory(output_directory, timestamp_str)
+    for _ in relative_path.parts:
+        root_directory = root_directory.parent
+
+    # Set up input/output directories.
+    input_directory = root_directory / "raw"
+    output_directory = root_directory / "processed"
+
+    print(f"root dir : {root_directory}")
+    print(f"input dir : {input_directory}")
+    print(f"output dir : {output_directory}")
+    print(f"data dir exists : {Path(root_directory / "data").exists()}")
+
+    # Validate the expected PyFAME directory structure.
+    if not input_directory.is_dir():
+        raise FileReadError(
+            message=(
+                f"Unable to locate the 'raw' subdirectory under "
+                f"'{root_directory}'. Please call make_paths() to set up "
+                f"the correct directory structure."
+            )
+        )
+
+    if not output_directory.is_dir():
+        raise FileReadError(
+            message=(
+                f"Unable to locate the 'processed' subdirectory under "
+                f"'{root_directory}'. Please call make_paths() to set up "
+                f"the correct directory structure."
+            )
+        )
+
+    output_directory = Path(
+        create_output_directory(output_directory, timestamp_str)
+    )
+
     # Map any scaffoled sub-organization from the input dir to the output dir
     map_directory_structure(input_directory, output_directory)
 
@@ -179,7 +189,6 @@ def apply_temporal_shuffle(file_paths:pd.DataFrame, shuffle_method:int = TEMPORA
         codec = "mp4v"
         capture = None
         result = None
-        block_size = None
 
         # Using the file extension to sniff video codec or image container for images
         if extension not in {".mp4", ".mov"}:
@@ -189,7 +198,7 @@ def apply_temporal_shuffle(file_paths:pd.DataFrame, shuffle_method:int = TEMPORA
         relative_file_path = relative_paths.iloc[i]
         
         subdirectory_names = [
-            part for part in relative_file_path.split(os.sep)
+            part for part in str(relative_file_path).split(os.sep)
             if part not in (root_directory, "raw", os.path.basename(file))
         ]
 
@@ -223,12 +232,14 @@ def apply_temporal_shuffle(file_paths:pd.DataFrame, shuffle_method:int = TEMPORA
                         break
                     else:
                         break
+
+                largest_key_idx = block_order.index(max(block_order))
+                len_last_block = len(shuffled_frames.get(largest_key_idx))
                 
-                if drop_last_block:
+                if drop_last_block and (len_last_block != block_size):
                     key = len(shuffled_frames) - 1 
                     shuffled_frames.pop(key)
 
-                    largest_key_idx = block_order.index(max(block_order))
                     del block_order[largest_key_idx]
 
                 original_keys = list(shuffled_frames.keys())
@@ -262,8 +273,11 @@ def apply_temporal_shuffle(file_paths:pd.DataFrame, shuffle_method:int = TEMPORA
                         break
                     else:
                         break
+
+                largest_key_idx = block_order.index(max(block_order))
+                len_last_block = len(shuffled_frames.get(largest_key_idx))
                 
-                if drop_last_block:
+                if drop_last_block and (len_last_block != block_size):
                     key = len(shuffled_frames) - 1 
                     shuffled_frames.pop(key)
                 
@@ -299,8 +313,11 @@ def apply_temporal_shuffle(file_paths:pd.DataFrame, shuffle_method:int = TEMPORA
                         break
                     else:
                         break
+
+                largest_key_idx = block_order.index(max(block_order))
+                len_last_block = len(shuffled_frames.get(largest_key_idx))
                 
-                if drop_last_block:
+                if drop_last_block and (len_last_block != block_size):
                     key = len(shuffled_frames) - 1 
                     shuffled_frames.pop(key)
                 
@@ -335,8 +352,11 @@ def apply_temporal_shuffle(file_paths:pd.DataFrame, shuffle_method:int = TEMPORA
                         break
                     else:
                         break
+
+                largest_key_idx = block_order.index(max(block_order))
+                len_last_block = len(shuffled_frames.get(largest_key_idx))
                 
-                if drop_last_block:
+                if drop_last_block and (len_last_block != block_size):
                     key = len(shuffled_frames) - 1 
                     shuffled_frames.pop(key)
                 

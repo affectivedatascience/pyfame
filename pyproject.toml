@@ -47,13 +47,13 @@ docs = [
 dev = [
     "pyfame[docs]",
     "pytest >= 8.0.0",
-    "tox >= 4.24.0",
     "build",
     "twine"
 ]
 
 [project.urls]
 Homepage = "https://github.com/affectivedatascience/PyFAME"
+Documentation = "https://affectivedatascience.github.io/pyfame/"
 
 [tool.setuptools.packages.find]
 where = ["src"]

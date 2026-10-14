@@ -2,7 +2,7 @@ import cv2 as cv
 from pyfame.utils.exceptions import *
 from pyfame.utils.checks import *
 
-def get_video_writer(file_path:str | Path, frame_size:tuple[int,int], video_codec:str = 'mp4v', frame_rate:float = 30, isColor:bool = True) -> cv.VideoWriter:
+def get_video_writer(file_path:str | Path, frame_size:tuple[int,int], video_codec:str = 'mp4v', frame_rate:float = 30.0, isColor:bool = True) -> cv.VideoWriter:
     """ Convenience wrapper function returning a cv2.VideoWriter object.
 
     Parameters

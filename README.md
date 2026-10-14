@@ -1,4 +1,5 @@
-![Docs](https://github.com/Gavin-Bosman/PyFAME/actions/workflows/deploy.yml/badge.svg)
+[![Docs](https://github.com/affectivedatascience/PyFAME/actions/workflows/deploy.yml/badge.svg)](https://affectivedatascience.github.io/pyfame/)
+[![Tests](https://github.com/affectivedatascience/PyFAME/actions/workflows/tests.yml/badge.svg)](https://github.com/affectivedatascience/PyFAME/actions/workflows/tests.yml)
 [![PyPI Version](https://img.shields.io/pypi/v/pyfame)](https://pypi.org/project/pyfame/)
 [![PyPI Downloads](https://static.pepy.tech/personalized-badge/pyfame?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/pyfame)
 

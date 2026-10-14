@@ -111,7 +111,7 @@ def get_landmarker_coordinates(frame_rgb:cv.typing.MatLike, face_landmarker:Any,
     face_landmarker: Any
         A defined instance of the MediaPipe FaceLandmarker model.
 
-    timestamp_msec: float
+    timestamp_msec: float or None
         If the FaceLandmarker is in video running mode, the 
         current video timestamp is required.
     
@@ -140,7 +140,7 @@ def get_landmarker_coordinates(frame_rgb:cv.typing.MatLike, face_landmarker:Any,
         within the provided frame.
     """
     check_type(frame_rgb, [cv.typing.MatLike, ndarray])
-    check_type(timestamp_msec, [float])
+    check_type(timestamp_msec, [float, type(None)])
     check_type(static_image_mode, [bool])
     check_type(return_blendshapes, [bool])
     
