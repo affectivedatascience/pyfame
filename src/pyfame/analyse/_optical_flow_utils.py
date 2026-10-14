@@ -1,6 +1,6 @@
 import cv2 as cv
 import numpy as np
-import matplotlib.cm as cm
+import matplotlib
 
 def draw_legend(frame, vmin:float = 0.0, vmax:float = 1.0, legend_position:str = "top-left"):
     h, w, _ = frame.shape
@@ -35,7 +35,7 @@ def draw_legend(frame, vmin:float = 0.0, vmax:float = 1.0, legend_position:str =
 
     # Create a vertical gradient colour mapped to viridis
     gradient = np.linspace(1, 0, height)[:, None]
-    cmap = cm.get_cmap("viridis")
+    cmap = matplotlib.colormaps["viridis"]
     colours = (cmap(gradient)[:, :, :3] * 255).astype(np.uint8)
     legend_bar = cv.resize(colours, (bar_width, height - padding))
     legend_bar = cv.cvtColor(legend_bar, cv.COLOR_RGB2BGR)

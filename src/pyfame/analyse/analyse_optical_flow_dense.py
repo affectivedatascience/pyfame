@@ -7,7 +7,7 @@ from pyfame.utils.checks import check_file_paths
 from pyfame.file_access.file_access_directories import create_output_directory
 from pyfame.analyse._optical_flow_utils import draw_legend
 from pyfame.analyse.analyse_optical_flow_sparse import precompute_colour_scale
-import matplotlib.cm as cm
+import matplotlib
 import matplotlib.colors as mpcolors
 from datetime import datetime
 import os
@@ -188,7 +188,7 @@ def analyse_optical_flow_dense(file_paths:pd.DataFrame, frame_step:int = 5, outp
         # Defining persistent loop params
         counter = 1
         previous_grey_frame = None
-        cmap = cm.get_cmap("viridis")
+        cmap = matplotlib.colormaps["viridis"]
         global_mags = []
         magnitude_min = None
         magnitude_max = None

@@ -9,7 +9,7 @@ from pyfame.utils.constants import *
 from pyfame.utils.checks import check_file_paths
 from pyfame.analyse._optical_flow_utils import draw_legend, draw_scaled_flow_arrows
 from pyfame.file_access.file_access_directories import create_output_directory
-import matplotlib.cm as cm
+import matplotlib
 import matplotlib.colors as mpcolors
 from datetime import datetime
 import os
@@ -310,7 +310,7 @@ def analyse_optical_flow_sparse(file_paths:pd.DataFrame, landmark_idx_to_track:l
         counter = 1
         init_points = None
         old_gray = None
-        cmap = cm.get_cmap("viridis")
+        cmap = matplotlib.colormaps["viridis"]
         global_mags = []
         magnitude_min = None
         magnitude_max = None
