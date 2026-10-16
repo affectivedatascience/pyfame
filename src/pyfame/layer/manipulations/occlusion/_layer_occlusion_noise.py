@@ -292,7 +292,10 @@ class LayerOcclusionNoise(Layer):
                     output_frame = random_noise(image=output_frame, mode='gaussian', rng=rng, mean=self.mean, var=var)
                     output_frame = img_as_ubyte(output_frame)
 
-                    output_frame = np.where(mask == 255, output_frame, frame)
+                    probability_mask = rng.random(frame.shape[:2]) < self.noise_probability
+                    combined_mask = (mask == 255) & probability_mask[..., np.newaxis]
+                    
+                    output_frame = np.where(combined_mask, output_frame, frame)
             
             return output_frame
 

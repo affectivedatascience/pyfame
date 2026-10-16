@@ -16,3 +16,5 @@ class FaceAnchor(Enum):
     SUBJECT_CENTER_LEFT = (0.25, 0.0)
     
     SUBJECT_LOWER_CENTER = (0.0, 0.25)
+
+    SUBJECT_UNCHANGED = None

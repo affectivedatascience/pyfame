@@ -409,10 +409,14 @@ class LayerSpatialLandmarkRelocate(Layer):
                 cx = (cropped_lm.shape[1]) // 2
                 cy = (cropped_lm.shape[0]) // 2
 
+                original_cx = min_x + cx
+                original_cy = min_y + cy
+
                 landmarks[i] = {
                     'img' : lm, 
                     'mask' : cropped_mask, 
-                    'center' : (cx,cy)
+                    'center' : (cx,cy),
+                    'original_center' : (original_cx, original_cy)
                 }
 
                 # ---------- Filling in cut out regions of the original frame ----------
@@ -449,7 +453,10 @@ class LayerSpatialLandmarkRelocate(Layer):
             h,w = landmark.shape[:2]
 
             # Get pixel coordinates from facial anchor
-            cx, cy = _anchor_to_pixel(spec.anchor, face_center, face_width, face_height)
+            if spec.anchor.value is not None:
+                cx, cy = _anchor_to_pixel(spec.anchor, face_center, face_width, face_height)
+            else:
+                cx, cy = lm['original_center']
 
             # Adding normalised offsets
             cx += int(spec.offsets[0] * face_width)

@@ -1,6 +1,7 @@
 # Ignore all auto generated runtime caches
 __pycache__/
 .pytest_cache/
+.coverage
 
 # Ignore all local environment files
 /.tox/
