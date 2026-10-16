@@ -436,8 +436,8 @@ class LayerSpatialLandmarkRelocate(Layer):
         
         # Perform a weighted addition between the facial mean tone and the inpainted image
         facial_mean = cv.mean(frame, mask=face_skin_mask)[:3]
-        fo_only = np.where(fo_mask[..., np.newaxis] == 255, facial_mean, frame).astype(np.uint8)
-        output_frame = cv.addWeighted(output_frame, 0.6, fo_only, 0.4, 0)
+        f_skin_only = np.where(face_skin_mask[..., np.newaxis] == 255, facial_mean, frame).astype(np.uint8)
+        output_frame = cv.addWeighted(output_frame, 0.6, f_skin_only, 0.4, 0)
         
         # Cloning rotated landmarks into their new positions on the underlying face
         for key, lm in landmarks.items():

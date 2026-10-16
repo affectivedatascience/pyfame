@@ -45,7 +45,7 @@ def make_json_serializable(obj):
     else:
         return obj
 
-def write_experiment_log(layers:list[Layer], working_directory_path:str = (os.path.normpath(os.path.join(os.getcwd(), "data")))) -> None:
+def write_experiment_log(layers:list[Layer] | Layer, timestamp_id:str, working_directory_path:str = (os.path.normpath(os.path.join(os.getcwd(), "data")))) -> None:
     """ Given a list of layers and the working data folder path, 
     write out a JSON file log containing all layers, TimingConfigurations 
     and layer parameters used in the last `apply_layers()` call. 
@@ -53,10 +53,16 @@ def write_experiment_log(layers:list[Layer], working_directory_path:str = (os.pa
     Parameters
     ----------
 
-    layers : list[Layer]
+    layers : list[Layer] or Layer
         A list of the Layer objects to be logged. Internally
         passed by `apply_layers()` after each successful 
         processing run
+    
+    timestamp_id : str
+        A unique timestamp identifier string that serves as a name 
+        for the logs output folder. Provided from apply_layers such that
+        the file and the file-log will share the same unique output folder name
+        under `processed/` and `logs/` respectively.
 
     working_directory_path : str
         A path string to the working data folder within your
@@ -82,8 +88,11 @@ def write_experiment_log(layers:list[Layer], working_directory_path:str = (os.pa
         raise OSError(message=f"Unable to locate the input {os.path.basename(working_directory_path)} directory. Please call make_output_paths() to initialise the working directory.")
 
     # Creating a unique file identifier
-    timestamp = datetime.now().isoformat(timespec='seconds')
+    log_creation_timestamp = datetime.now().isoformat(timespec='seconds')
     output_path = os.path.join(working_directory_path, "logs")
+
+    if not isinstance(layers, list):
+        layers = [layers]
 
     layer_dict = {}
     for layer in layers:
@@ -99,7 +108,7 @@ def write_experiment_log(layers:list[Layer], working_directory_path:str = (os.pa
 
     log_data = {
         "schema_version":"1.0",
-        "timestamp":timestamp,
+        "timestamp":log_creation_timestamp,
         "layers": layer_dict
     }
 
@@ -113,8 +122,7 @@ def write_experiment_log(layers:list[Layer], working_directory_path:str = (os.pa
     except ValidationError as e:
         raise ValueError(f"Experiment log failed to validate: {e.message}.")
 
-    file_id = timestamp.replace(":","-")
-    filename = os.path.join(output_path, f"{file_id}.json")
+    filename = os.path.join(output_path, f"{timestamp_id}.json")
 
     with open(filename, "w") as f:
         json.dump(log_data, f, indent=2)

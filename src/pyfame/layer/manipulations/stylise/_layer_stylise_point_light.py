@@ -9,6 +9,7 @@ import cv2 as cv
 import numpy as np
 from skimage.util import *
 # Reimplement passing of idx_to_track list for precise landmark inclusion
+# TODO: reimplement lm sampling with point_density
 
 class PointLightParameters(BaseModel):
     """
@@ -24,10 +25,6 @@ class PointLightParameters(BaseModel):
         Landmark index paths defining facial regions to include. Each
         tuple corresponds to a landmark index (or index group depending
         on upstream representation). Nested lists allow multiple regions.
-    point_density : float
-        Proportion of valid landmarks to render, in the range (0.0, 1.0].
-        Values less than 1.0 randomly subsample landmarks using a
-        pseudo-normal distribution across index groups.
     point_colour : tuple of int
         RGB colour of rendered landmark points, with values in [0, 255].
     point_radius : int
@@ -60,7 +57,6 @@ class PointLightParameters(BaseModel):
     """
 
     landmark_paths:Union[List[List[Tuple[int,...]]], List[Tuple[int,...]]]
-    point_density:PositiveFloat
     point_colour:tuple[NonNegativeInt, NonNegativeInt, NonNegativeInt]
     point_radius:int
     display_history_vectors:bool
@@ -77,15 +73,6 @@ class PointLightParameters(BaseModel):
         for elem in value:
             if not (0 <= elem <= 255):
                 raise ValueError(f"{field_name} values must lie in the range 0 - 255.")
-        
-        return value
-    
-    @field_validator("point_density")
-    @classmethod
-    def check_normal_range(cls, value, info:ValidationInfo):
-        field_name = info.field_name
-        if not (0.0 < value <= 1.0):
-            raise ValueError(f"Invalid value for parameter {field_name}. Must lie in the range 0.0 - 1.0.")
         
         return value
 
@@ -140,8 +127,6 @@ class LayerStylisePointLight(Layer):
         Landmark positions from the previous frame.
     idx_to_display : ndarray
         Indices of landmarks selected for rendering based on density.
-    point_density : float
-        Proportion of landmarks displayed.
     point_colour : tuple of int
         RGB colour of rendered points.
     point_radius : int
@@ -196,7 +181,6 @@ class LayerStylisePointLight(Layer):
         # Declare class parameters
         self.frame_history = []
         self.prev_points = None
-        self.point_density = self.pl_params.point_density
         self.point_colour = self.pl_params.point_colour
         self.point_radius = self.pl_params.point_radius
         self.maintain_background = self.pl_params.maintain_background
@@ -297,8 +281,6 @@ class LayerStylisePointLight(Layer):
 
         Notes
         -----
-        - If ``point_density < 1.0``, a subset of landmarks is sampled once
-        and reused across frames.
         - If ``maintain_background=False``, the output is rendered on a
         blank frame.
         - If ``invert_colours=True``, the final image is inverted.
@@ -378,7 +360,7 @@ class LayerStylisePointLight(Layer):
         return output_img
         
 def layer_stylise_point_light(timing_configuration:TimingConfiguration | None = None, landmark_paths:list[list[tuple[int,int]]] | list[tuple[int,int]]=LANDMARK_FACE_OVAL, 
-                              point_density:float = 1.0, point_colour:tuple[int,int,int] = (255,255,255), point_radius:int = 3, display_history_vectors:bool = False, 
+                              point_colour:tuple[int,int,int] = (255,255,255), point_radius:int = 3, display_history_vectors:bool = False, 
                               history_window_msec:int = 500, history_method:int|str = SHOW_HISTORY_ORIGIN, history_vector_colour:tuple[int,int,int] = (0,0,255), 
                               maintain_background:bool = False, invert_colours:bool = False):
     """
@@ -397,8 +379,6 @@ def layer_stylise_point_light(timing_configuration:TimingConfiguration | None = 
         configuration is used.
     landmark_paths : list, optional
         Landmark region definitions used to select visible points.
-    point_density : float, optional
-        Proportion of landmarks to render, in the range (0.0, 1.0].
     point_colour : tuple of int, optional
         RGB colour of rendered points.
     point_radius : int
@@ -432,8 +412,7 @@ def layer_stylise_point_light(timing_configuration:TimingConfiguration | None = 
     # Validate input params
     try:
         params = PointLightParameters(
-            landmark_paths=landmark_paths, 
-            point_density=point_density, 
+            landmark_paths=landmark_paths,  
             point_colour=point_colour, 
             point_radius=point_radius,
             display_history_vectors=display_history_vectors, 

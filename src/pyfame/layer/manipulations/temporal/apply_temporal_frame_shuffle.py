@@ -141,7 +141,7 @@ def apply_temporal_shuffle(file_paths:pd.DataFrame, shuffle_method:int = TEMPORA
 
     root_directory = absolute_path
 
-    for _ in relative_path.parts:
+    for _ in relative_path.parts[1:]:
         root_directory = root_directory.parent
 
     # Set up input/output directories.
@@ -171,9 +171,6 @@ def apply_temporal_shuffle(file_paths:pd.DataFrame, shuffle_method:int = TEMPORA
         create_output_directory(output_directory, timestamp_str)
     )
 
-    # Map any scaffoled sub-organization from the input dir to the output dir
-    map_directory_structure(input_directory, output_directory)
-
     for i,file in enumerate(absolute_paths):
 
         if not os.path.isfile(file):
@@ -189,16 +186,8 @@ def apply_temporal_shuffle(file_paths:pd.DataFrame, shuffle_method:int = TEMPORA
         if extension not in {".mp4", ".mov"}:
             raise UnrecognizedExtensionError()
 
-        # Get the relative file path
-        relative_file_path = relative_paths.iloc[i]
-        
-        subdirectory_names = [
-            part for part in str(relative_file_path).split(os.sep)
-            if part not in (root_directory, "raw", os.path.basename(file))
-        ]
-
         # Saving the absolute output path for writing out later
-        dir_file_path = os.path.join(output_directory, *subdirectory_names, f"{filename}{extension}")
+        dir_file_path = os.path.join(output_directory, f"{filename}{extension}")
 
         capture = get_video_capture(file)
         size = (int(capture.get(3)), int(capture.get(4)))

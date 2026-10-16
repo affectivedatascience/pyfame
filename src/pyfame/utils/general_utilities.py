@@ -174,7 +174,6 @@ def _anchor_to_pixel(anchor: FaceAnchor, face_center: tuple[int,int], face_width
     """
     check_type(anchor, [FaceAnchor])
     check_type(face_center, [int], iterable=True)
-    check_value()
 
     ax, ay = anchor.value
     px = int(face_center[0] + ax * face_width)

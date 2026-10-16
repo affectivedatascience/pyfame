@@ -1,4 +1,4 @@
-from pyfame.file_access import get_video_capture, get_video_writer, get_imread, map_directory_structure, create_output_directory
+from pyfame.file_access import get_video_capture, get_video_writer, get_imread, create_output_directory
 from pyfame.utils.exceptions import *
 from pyfame.utils.checks import *
 from pyfame.layer.timing_curves import *
@@ -14,7 +14,7 @@ import numpy as np
 from datetime import datetime
 from tqdm import tqdm
 
-def resolve_timing(layer:Layer, video_duration:float):
+def _resolve_timing(layer:Layer, video_duration:float):
     onset = 0.0 if layer.onset_t is None else layer.onset_t
     offset = video_duration if layer.offset_t is None else layer.offset_t
     if offset < 0.0:
@@ -34,6 +34,25 @@ def resolve_timing(layer:Layer, video_duration:float):
     # keep layer.self params in sync
     layer.onset_t = onset
     layer.offset_t = offset
+
+def _create_session_directory(output_dir: Path) -> tuple[Path, str]:
+    # Get the current sys timestamp for a unique output folder
+    # name that will identify the processing session
+    timestamp = datetime.now().isoformat(timespec='microseconds')
+    timestamp_str = timestamp.replace(":","-")
+    timestamp_id = timestamp_str
+
+    session_dir = output_dir / timestamp_id
+    counter = 1
+
+    while True:
+        try:
+            session_dir.mkdir(parents=True, exist_ok=False)
+            return (session_dir, timestamp_id)
+        except FileExistsError:
+            timestamp_id = f"{timestamp_str}_{counter}"
+            session_dir = output_dir / timestamp_id
+            counter += 1
 
 def apply_layers(file_paths:pd.DataFrame, layers:list[Layer] | Layer, min_face_detection_confidence:float = 0.4, 
                  min_face_presence_confidence:float = 0.7, min_face_tracking_confidence:float = 0.7):
@@ -75,16 +94,12 @@ def apply_layers(file_paths:pd.DataFrame, layers:list[Layer] | Layer, min_face_d
         Given an image or video with an unrecognized container/codec.
     """
 
-    # Get the current sys timestamp for a unique output folder
-    # name that will identify the processing session
-    timestamp = datetime.now().isoformat(timespec='seconds')
-    timestamp_str = timestamp.replace(":","-")
-
     # Validate input params
     check_file_paths(file_paths=file_paths)
 
-    check_type(layers, [list])
-    check_type(layers, [Layer], iterable=True)
+    check_type(layers, [list, Layer])
+    if isinstance(layers, list):
+        check_type(layers, [Layer], iterable=True)
 
     mp_params = [min_face_detection_confidence, min_face_presence_confidence, min_face_tracking_confidence]
     for p in mp_params:
@@ -104,7 +119,7 @@ def apply_layers(file_paths:pd.DataFrame, layers:list[Layer] | Layer, min_face_d
 
     root_directory = absolute_path
 
-    for _ in relative_path.parts:
+    for _ in relative_path.parts[1:]:
         root_directory = root_directory.parent
 
     # Set up input/output directories.
@@ -131,16 +146,14 @@ def apply_layers(file_paths:pd.DataFrame, layers:list[Layer] | Layer, min_face_d
         )
 
     # Create this run's output directory.
-    output_directory = Path(
-        create_output_directory(output_directory, timestamp_str)
-    )
-
-    # Reproduce any organization beneath raw/ in processed/.
-    map_directory_structure(input_directory, output_directory)
+    output_directory, timestamp_id = _create_session_directory(output_directory)
 
     # Initialize the processing pipeline
     pipeline = LayerPipeline()
-    pipeline.add_layers(layers)
+    if isinstance(layers, list):
+        pipeline.add_layers(layers)
+    else:
+        pipeline.add_layer(layers)
 
     static_image_mode = False
     log_output = False
@@ -165,17 +178,9 @@ def apply_layers(file_paths:pd.DataFrame, layers:list[Layer] | Layer, min_face_d
         capture = None
         result = None
         cap_duration = 0
-        
-        # Get the relative file path
-        relative_file_path = relative_paths.iloc[i]
-        
-        subdirectory_names = [
-            part for part in str(relative_file_path).split(os.sep)
-            if part not in (root_directory, "raw", os.path.basename(file))
-        ]
 
         # Saving the absolute output path for writing out later
-        dir_file_path = os.path.join(output_directory, *subdirectory_names, f"{filename}{extension}")
+        dir_file_path = os.path.join(output_directory, f"{filename}{extension}")
 
         # Using the file extension to sniff video codec or image container for images
         if str.lower(extension) not in {".mp4", ".mov", ".jpg", ".jpeg", ".png", ".bmp"}:
@@ -200,7 +205,7 @@ def apply_layers(file_paths:pd.DataFrame, layers:list[Layer] | Layer, min_face_d
                 cap_duration = (float(frame_count)/float(fps))*1000
 
             for layer in pipeline.layers:
-                resolve_timing(layer, cap_duration)
+                _resolve_timing(layer, cap_duration)
         else:
             frame_count = 1
         
@@ -263,15 +268,17 @@ def apply_layers(file_paths:pd.DataFrame, layers:list[Layer] | Layer, min_face_d
         pb.close()
 
         if not log_output:
-            write_experiment_log(layers, root_directory)
+            write_experiment_log(layers, timestamp_id, root_directory)
             log_output = True
     
         if not static_image_mode:
             capture.release()
             result.release()
-        
-        for layer in layers:
-            # Reset back to initial state after user construction
-            layer._reset_state()
 
-__all__ = ["apply_layers", "resolve_timing"]
+        if isinstance(layers, list):
+            for layer in layers:
+                layer._reset_state()
+        else:
+            layers._reset_state()
+
+__all__ = ["apply_layers", "_resolve_timing"]

@@ -678,8 +678,8 @@ def layer_spatial_grid_shuffle(timing_configuration:TimingConfiguration | None =
         ``"random"``, ``"cyclic shift"`` and ``"none"``. Accepted integer values are
         ``27`` (random), ``28`` (cyclic shift) and ``48`` (none).
     grid_square_size : int, default=40
-        The baseline side length in pixels of each grid square at the
-        reference face width. Must be a positive integer.
+        The baseline side length in pixels of each grid square. 
+        Must be a positive integer.
     grid_dimensions : tuple of int
         An override to grid_square_size, infers the size of the individual
         cells to fit into the specified grid dimensions. Must be a tuple 
