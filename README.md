@@ -16,9 +16,7 @@ Here is an example of PyFAME performing pixel-level modifications to create new 
 
 ## Statement of Need
 
-Manipulation of facial images is a common paradigm in psychology and related disciplines. Many studies use stand-alone GUI-based editors (e.g., photoshop). However, these tools lack dedicated facial manipulation types, require significant domain expertise, work primarily with images, lack a reproducible log of changes, and require point-and-click creation of individual images.
-
-PyFAME - the Python Facial Analysis and Manipulation Environment - fills this gap by providing a flexible pipeline for applying and stacking manipulations to facial images, with a scalable design suited for large image or movie datasets.
+PyFAME - The Python Facial Analysis and Manipulation Environment - is an open-source Python toolbox for manipulating facial features in images and videos. It provides researchers with tools to modify specific facial regions, control how changes develop over time, and combine multiple effects within a single workflow. These tools make it easier to create consistent, reproducible experimental stimuli without requiring extensive programming experience. By simplifying the process of facial image and video manipulation, PyFAME helps researchers explore how different facial features influence human perception.
 
 ## Example: 
 As a quick example, this is the simplest way to set up your file system and to get processing facial manipulations with PyFAME:

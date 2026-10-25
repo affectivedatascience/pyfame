@@ -634,8 +634,8 @@ def layer_overlay(timing_configuration:TimingConfiguration | None = None, overla
         params = OverlayParameters(
             overlay=overlay,
             overlay_scale_factor=overlay_scale_factor, 
-            y_offset = y_offset,
-            x_offset = x_offset,
+            y_offset=y_offset,
+            x_offset=x_offset,
             pupil_scale_factor=pupil_scale_factor
         )
         

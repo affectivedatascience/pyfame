@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyfame"
-version = "1.0.10"
+version = "2.0.0"
 authors = [
     { name="Gavin Bosman", email="gavin.bosman12@gmail.com" },
 ]

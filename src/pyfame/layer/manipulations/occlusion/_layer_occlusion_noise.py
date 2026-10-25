@@ -40,7 +40,7 @@ class NoiseParameters(BaseModel):
     gaussian_mean : float
         The mean of the Gaussian noise distribution. Only used when
         ``noise_method`` is ``"gaussian"``.
-    gaussian_deviation : float
+    gaussian_std : float
         The standard deviation of the Gaussian noise distribution.
         Must be non-negative. Variance is derived as the square of
         this value. Only used when ``noise_method`` is ``"gaussian"``.
@@ -54,7 +54,7 @@ class NoiseParameters(BaseModel):
     noise_probability:NonNegativeFloat = Field(ge=0.0, le=1.0)
     pixel_size:PositiveInt
     gaussian_mean:float
-    gaussian_deviation:NonNegativeFloat
+    gaussian_std:NonNegativeFloat
     landmark_paths:Union[List[List[Tuple[int,...]]], List[Tuple[int,...]]]
 
     @field_validator("noise_method")
@@ -126,9 +126,9 @@ class LayerOcclusionNoise(Layer):
         Per-pixel noise probability used by the salt and pepper method.
     pixel_size : int
         Downsampling factor used by the pixelation method.
-    mean : float
+    gaussian_mean : float
         Mean of the Gaussian noise distribution.
-    standard_deviation : float
+    gaussian_std : float
         Standard deviation of the Gaussian noise distribution.
     landmark_paths : list of list of tuple of int or list of tuple of int
         Landmark paths defining the region(s) in which noise is applied.
@@ -170,7 +170,7 @@ class LayerOcclusionNoise(Layer):
         self.noise_probability = self.noise_params.noise_probability
         self.pixel_size = self.noise_params.pixel_size
         self.mean = self.noise_params.gaussian_mean
-        self.standard_deviation = self.noise_params.gaussian_deviation
+        self.standard_deviation = self.noise_params.gaussian_std
         self.landmark_paths = self.noise_params.landmark_paths
 
         # Snapshot of initial state
@@ -300,7 +300,7 @@ class LayerOcclusionNoise(Layer):
             return output_frame
 
 def layer_occlusion_noise(timing_configuration:TimingConfiguration | None = None, landmark_paths:list[list[tuple[int,...]]] | list[tuple[int,...]] = LANDMARK_FACE_OVAL, noise_method:int|str = "gaussian", 
-                          noise_probability:float = 0.5, pixel_size:int = 32, mean:float = 0.0, standard_deviation:float = 0.5, random_seed:int|None = None) -> LayerOcclusionNoise:
+                          noise_probability:float = 0.5, pixel_size:int = 32, gaussian_mean:float = 0.0, gaussian_std:float = 0.5, random_seed:int|None = None) -> LayerOcclusionNoise:
     """
     Factory function for the noise occlusion manipulation layer.
     `LayerOcclusionNoise` obscures one or more landmark-defined facial
@@ -329,10 +329,10 @@ def layer_occlusion_noise(timing_configuration:TimingConfiguration | None = None
     pixel_size : int, default=32
         The downsampling factor used by the pixelation method. Must be a
         positive integer >= 4. Ignored by other noise methods.
-    mean : float, default=0.0
+    gaussian_mean : float, default=0.0
         The mean of the Gaussian noise distribution. Ignored by other
         noise methods.
-    standard_deviation : float, default=0.5
+    gaussian_std : float, default=0.5
         The standard deviation of the Gaussian noise distribution. Must be
         non-negative. Ignored by other noise methods.
     random_seed : int or None, default=None
@@ -361,8 +361,8 @@ def layer_occlusion_noise(timing_configuration:TimingConfiguration | None = None
             noise_method=noise_method, 
             noise_probability=noise_probability, 
             pixel_size=pixel_size, 
-            gaussian_mean=mean, 
-            gaussian_deviation=standard_deviation, 
+            gaussian_mean=gaussian_mean, 
+            gaussian_std=gaussian_std, 
             landmark_paths=landmark_paths
         )
     except ValidationError as e:

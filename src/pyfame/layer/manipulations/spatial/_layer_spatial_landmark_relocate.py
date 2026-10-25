@@ -11,8 +11,6 @@ import cv2 as cv
 import numpy as np
 from operator import itemgetter
 
-### TODO investigate scaling inpainting radius with facial width
-
 class LandmarkRelocateSpec(BaseModel):
     """
     Specification model defining the relocation parameters for a single
@@ -72,7 +70,7 @@ class RelocateParameters(BaseModel):
         enabling reproducible random relocation specifications across runs.
         If ``None``, a seed is sampled uniformly from [0, 1000) at
         initialisation time.
-    user_specs : dict of {int : LandmarkRelocateSpec} or None, optional
+    landmark_relocate_specs : dict of {int : LandmarkRelocateSpec} or None, optional
         A dictionary mapping landmark keys to their relocation
         specifications. Keys are integers in the range [0, 3], corresponding
         to left eye (0), right eye (1), nose (2), and mouth (3). If ``None``,
@@ -89,7 +87,7 @@ class RelocateParameters(BaseModel):
     """
 
     random_seed:Optional[PositiveInt] = None
-    user_specs:Optional[Dict[int, LandmarkRelocateSpec]] = None
+    landmark_relocate_specs:Optional[Dict[int, LandmarkRelocateSpec]] = None
     max_random_offset:float
     out_greyscale:bool
 
@@ -103,7 +101,7 @@ class RelocateParameters(BaseModel):
         
         return value
 
-    @field_validator("user_specs")
+    @field_validator("landmark_relocate_specs")
     @classmethod
     def check_spec_keys(cls, value):
         if value is not None:
@@ -225,12 +223,12 @@ class LayerSpatialLandmarkRelocate(Layer):
         self.rng = np.random.default_rng(self.rand_seed)
 
         # If no user spec, generate random spec
-        if self.relocate_params.user_specs is None:
+        if self.relocate_params.landmark_relocate_specs is None:
             self.relocate_keys = [0,1,2,3]
-            self.relocate_params.user_specs = self._get_random_relocate_spec()
+            self.relocate_params.landmark_relocate_specs = self._get_random_relocate_spec()
 
         else:
-            self.relocate_keys = list(self.relocate_params.user_specs.keys())
+            self.relocate_keys = list(self.relocate_params.landmark_relocate_specs.keys())
 
         # Snapshot of initial state
         self._snapshot_state()
@@ -483,7 +481,7 @@ class LayerSpatialLandmarkRelocate(Layer):
         
         # Cloning rotated landmarks into their new positions on the underlying face
         for key, lm in landmarks.items():
-            spec = self.relocate_params.user_specs[key]
+            spec = self.relocate_params.landmark_relocate_specs[key]
             
             landmark = lm['img']
             mask = lm['mask']
@@ -574,7 +572,7 @@ def layer_spatial_landmark_relocate(timing_configuration:TimingConfiguration | N
     try:
         params = RelocateParameters(
             random_seed=random_seed,
-            user_specs=landmark_relocate_specs,
+            landmark_relocate_specs=landmark_relocate_specs,
             max_random_offset=max_random_offset,
             out_greyscale=out_greyscale
         )

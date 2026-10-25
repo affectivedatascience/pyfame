@@ -57,7 +57,7 @@ def get_landmark_names(landmarks: list[tuple[int,int]] | list[list[tuple[int,int
                     names.append(name)
             
             if len(names) < i:
-                names.append("UNKNOWN_LANDMARK")
+                names.append(lm)
         
         return names
     
@@ -66,7 +66,7 @@ def get_landmark_names(landmarks: list[tuple[int,int]] | list[list[tuple[int,int
             if isinstance(val, list) and val == landmarks:
                 return name
         
-        return "UNKNOWN_LANDMARK"
+        return landmarks
 
 def compute_rotation_angle(slope_1:float, slope_2:float = 0.0) -> float:
     """ Given the current and previous slope, this function uses the arctan function to compute the angle delta 

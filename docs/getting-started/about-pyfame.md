@@ -28,4 +28,8 @@ Some of the packages capabilities include changing the colour of user-specified 
 
 ## Statement of Need
 
-Currently, there are no available tools for performing these types of pixel-level operations over videos. Existing research has commonly used general image editing tools (such as Photoshop). However, these tools apply changes to the entire image, causing noticeable background artifacts. PyFAME provides users the ability to selectively modify specific regions of the face, for both static images and videos. Our package also seamlessly integrates temporal functions into it's video processing, allowing users to specify how and when pixel-level operations will be applied.
+Currently, there are no available tools for performing these types of pixel-level operations over videos. Existing research has commonly used general image editing tools (i.e. Photoshop), but these tools often require extensive training and rely on manual editing of video frames.
+
+PyFAME provides users the ability to selectively modify specific regions of the face, in both static images and videos. Our package also seamlessly integrates temporal functions into it's video processing, allowing users to specify how and when pixel-level operations will be applied. These operations can be acheived with as little as 5 lines of code.
+
+Furthermore, the JSON log file outputs are ingestible. This makes it much easier to create consistent, reproducible experimental stimuli without requiring extensie programming experience. By simplifying the process of facial image and video manipulation, PyFAME helps researchers explore how different facial features influence human perception.

@@ -56,7 +56,7 @@ def test_layer_occlusion_noise_valid_pixel_size(pixel_size):
     [-10.0, 0.0, 10.0],
 )
 def test_layer_occlusion_noise_valid_mean(mean):
-    layer = layer_occlusion_noise(mean=mean)
+    layer = layer_occlusion_noise(gaussian_mean=mean)
 
     assert isinstance(layer, LayerOcclusionNoise)
 
@@ -66,7 +66,7 @@ def test_layer_occlusion_noise_valid_mean(mean):
     [0.0, 0.5, 1.0, 10.0],
 )
 def test_layer_occlusion_noise_valid_standard_deviation(standard_deviation):
-    layer = layer_occlusion_noise(standard_deviation=standard_deviation)
+    layer = layer_occlusion_noise(gaussian_std=standard_deviation)
 
     assert isinstance(layer, LayerOcclusionNoise)
 
@@ -137,7 +137,7 @@ def test_layer_occlusion_noise_invalid_pixel_size(pixel_size):
 )
 def test_layer_occlusion_noise_invalid_standard_deviation(standard_deviation):
     with pytest.raises(ValueError):
-        layer_occlusion_noise(standard_deviation=standard_deviation)
+        layer_occlusion_noise(gaussian_std=standard_deviation)
 
 
 @pytest.mark.parametrize(

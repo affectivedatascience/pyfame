@@ -12,6 +12,7 @@ from pyfame.layer.manipulations.spatial import (layer_spatial_grid_shuffle, laye
 from pyfame.layer.manipulations.stylise import (layer_stylise_point_light, layer_stylise_pencil_sketch)
 import pyfame.layer.timing_curves as t_curves
 import pyfame.utils.constants as const
+from pyfame.utils.face_anchors import FaceAnchor
 import pyfame.landmark.facial_landmarks as landmark
 
 def read_experiment_log(log_file_path:str) -> list[Layer]:
@@ -98,10 +99,10 @@ def read_experiment_log(log_file_path:str) -> list[Layer]:
         fn = layer_name_map.get(name)
         params = layers.get(name)
 
-        onset = params.pop("onset_time")
-        offset = params.pop("offset_time")
-        rise = params.pop("rise_time")
-        fall = params.pop("fall_time")
+        onset = params.pop("onset_time_msec")
+        offset = params.pop("offset_time_msec")
+        rise = params.pop("rise_time_msec")
+        fall = params.pop("fall_time_msec")
         rise_fn = params.pop("rise_curve")
         fall_fn = params.pop("fall_curve")
         rise_fn_kwargs = params.pop("rise_curve_kwargs")
@@ -125,6 +126,29 @@ def read_experiment_log(log_file_path:str) -> list[Layer]:
                     params.update({k:getattr(const, v)})
                 elif v in lm_dict:
                     params.update({k:getattr(landmark, v)})
+
+            elif k == "landmark_paths" and isinstance(v, list):
+                resolved_lm_paths = []
+                for item in v:
+                    if item in lm_dict:
+                        resolved_lm_paths.append(getattr(landmark, item))
+                    else:
+                        resolved_lm_paths.append(item)
+
+                params.update({k:resolved_lm_paths})
+
+            elif k == "landmark_relocate_specs" and isinstance(v, dict):
+                resolved_specs = {}
+                for i, spec in v.items():
+                    anchor = spec["anchor"]
+                    resolved_specs[int(i)] = {
+                        "anchor" : FaceAnchor[anchor],
+                        "rotation_deg" : spec["rotation_deg"],
+                        "offsets" : spec["offsets"]
+                    }
+
+                params.update({k:resolved_specs})
+            
 
         layer_instance = fn(timeconfig, **params)
         layers_return.append(layer_instance)
