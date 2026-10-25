@@ -4,14 +4,19 @@ All notable changes to PyFAME will be documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.10] 2026-09-24
+## Unreleased
+- Planned for [2.1.0] : LayerOverlay - Custom user object overlay files, combined with intuitive placement with FaceAnchor
+- Planned for [2.1.0] : LayerStylisePointLight - Reworked landmark to point light conversion with point density control
+- Planned for [2.1.0] : LayerSpatialLandmarkRelocate - More landmark support, addition of pupil relocation within sclera
+- Planned for [3.0.0] : Depth-aware manipulations using 3d depth map estimation models
+
+## [2.0.0] 2026-11-10
 
 ### Added
-- Continued minor updates improving over reworked architecture:
-    - Added asymetric timing curve capabilities for more precise temporal control
-    - Added pencil sketch stylistic manipulation
-    - Added `relative` vs `absolute` scale options for colouring family of layers
-    - Added several new landmark sets including `LANDMARK_LIPS`, `LANDMARK_LIPS_INNER_CONTOUR`, `LANDMARK_LIPS_OUTER_CONTOUR`, `LANDMARK_LEFT_EYEBROW` and `LANDMARK_RIGHT_EYEBROW`
+- Added asymetric timing curve capabilities for more precise temporal control
+- Added pencil sketch stylistic manipulation
+- Added `relative` vs `absolute` scale options for colouring family of layers
+- Added several new landmark sets including `LANDMARK_LIPS`, `LANDMARK_LIPS_INNER_CONTOUR`, `LANDMARK_LIPS_OUTER_CONTOUR`, `LANDMARK_LEFT_EYEBROW` and `LANDMARK_RIGHT_EYEBROW`
 - `make_paths` functionality was too broad, and has now been divided into three methods: `make_paths`, `load_user_data` and `load_sample_data`. Previously `make_paths` constructed the required directory structure AND returned a DataFrame of file paths, whereas now those two functionalities have been split. `make_paths` now is called only once after first installing PyFAME, setting up the necessary data folder in your working directory. The primary file readin method is now `load_user_data` which will return a DataFrame of file paths like before. Optionally users can also use newly packaged sample data by calling `load_sample_data`.
 - The documentation site has been completely reworked with mkdoctrings. The site is now automatically updated alongside the code definitions.
 
@@ -43,7 +48,7 @@ factory function of the same name, so that users don't have to deal with complex
 ### Changed
 
 - As noted above, we have completely reworked PyFAME's underlying architecture and design structure preparing for the 
-v1.0.0 release. The high-level changes and their justifications are as follows:
+  v1.0.0 release. The high-level changes and their justifications are as follows:
     - Transitioning from using the now deprecated mediapipe.solutions.FaceMesh to using the newer, actively supported 
     mediapipe.tasks.vision.FaceLandmarker. Almost every manipulation function in PyFAME relied on mediapipe's FaceMesh implementation, so a complete redesign was in order when migrating to mediapipe's newer equivalent FaceLandmarker. Additionally, the method by which the two models perform facial detection and tracking, the way in which they are instantiated, and the results they return differ quite drastically. 
     - Renaming and redefining landmark path constants was also a necessary step in PyFAME's redesign, as the new FacialLandmarker has 10 additional landmarks around the iris that previously were unimplimented in the FaceMesh solution. Several landmark indicies were renamed or moved, so PyFAME's previously defined landmark sets were no longer valid. The naming change reflects a higher degree of consistency with mediapipe's parameter names, and makes it easier to understand which constant is for what use case. 

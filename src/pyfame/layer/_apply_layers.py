@@ -242,7 +242,7 @@ def apply_layers(file_paths:pd.DataFrame, layers:list[Layer] | Layer, min_face_d
                     break
                 dt = capture.get(cv.CAP_PROP_POS_MSEC)
                 landmark_coordinates, blendshapes = get_landmarker_coordinates(cv.cvtColor(frame, cv.COLOR_BGR2RGB), face_landmarker, dt, static_image_mode, True)
-                
+            
             pb.update(1)
 
             if blendshapes is None:

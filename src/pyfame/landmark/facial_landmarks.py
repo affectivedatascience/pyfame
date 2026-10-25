@@ -96,8 +96,8 @@ LEFT_EYEBROW_IDX: list[int] = [
 The first landmark is repeated at the end to form a closed boundary."""
 
 NOSE_IDX: list[int] = [
-    168, 193, 122, 196, 236, 198, 209, 49, 48, 219, 235, 60, 242, 2, 290,
-    455, 294, 331, 429, 420, 456, 419, 351, 417, 168
+    168, 193, 122, 196, 236, 198, 209, 49, 102, 64, 235, 60, 242, 2, 462, 290,
+    455, 294, 331, 279, 429, 420, 456, 419, 351, 417, 168
 ]
 """MediaPipe Face Mesh landmark indices defining the standard nose region.
 The indices form a closed boundary around the nose."""

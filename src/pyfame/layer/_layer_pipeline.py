@@ -56,18 +56,18 @@ class LayerPipeline:
 
         for layer in self.layers:
             if isinstance(layer, (LayerColourRecolour, LayerOverlay)):
-                frame = layer.apply_layer(
+                frame_modified = layer.apply_layer(
                     landmarker_coordinates = landmarker_coordinates,
                     frame = frame, 
                     dt = dt, 
                     blendshapes = blendshapes
                 )
             else:
-                frame = layer.apply_layer(
+                frame_modified = layer.apply_layer(
                     landmarker_coordinates = landmarker_coordinates, 
                     frame = frame, 
                     dt = dt
                 )
-        return frame
+        return frame_modified
 
 __all__ = ["LayerPipeline"]

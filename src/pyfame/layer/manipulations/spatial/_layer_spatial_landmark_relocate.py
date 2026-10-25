@@ -307,7 +307,20 @@ class LayerSpatialLandmarkRelocate(Layer):
             )
         
         return specs
-    
+
+    def _scale_radii(self, value: int, face_width: int, odd: bool = False) -> int:
+        # Original radii configuration were tested successfully over a 330px wide face.
+        # As the radii of various operations will behave differently on varying image resolutions,
+        # we scale the radii values to the relative scale difference between the current facial width
+        # and the successful 330px configuration
+        scale = face_width / 330
+        scaled = max(1, round(value * scale))
+
+        if odd and scaled % 2 == 0:
+            scaled += 1
+
+        return scaled
+
     def apply_layer(self, landmarker_coordinates:list[tuple[int,int]], frame:cv.typing.MatLike, dt:float) -> cv.typing.MatLike:
         """
         Apply the landmark relocation manipulation to a single frame.
@@ -368,8 +381,6 @@ class LayerSpatialLandmarkRelocate(Layer):
         re_mask = mask_from_landmarks(frame, LANDMARK_RIGHT_EYE_REGION, landmarker_coordinates)
         nose_mask = mask_from_landmarks(frame, landmark_nose_wide, landmarker_coordinates)
         lip_mask = mask_from_landmarks(frame, LANDMARK_MOUTH, landmarker_coordinates)
-        fo_mask = mask_from_landmarks(frame, LANDMARK_FACE_OVAL, landmarker_coordinates)
-        face_skin_mask = mask_from_landmarks(frame, LANDMARK_FACE_SKIN, landmarker_coordinates)
 
         # Compute face reference frame for anchors
         max_x_fo = max(fo_screen_coords, key=itemgetter(0))[0]
@@ -389,6 +400,7 @@ class LayerSpatialLandmarkRelocate(Layer):
         screen_coords = [le_screen_coords, re_screen_coords, nose_screen_coords, lips_screen_coords]
         landmarks = {}
         output_frame = frame.copy()
+        inpaint_mask = np.zeros(frame.shape[:2], dtype=np.uint8)
 
         for i, (mask, coords) in enumerate(zip(masks, screen_coords)):
             # --------- Cutting out and storing landmarks ----------
@@ -400,7 +412,7 @@ class LayerSpatialLandmarkRelocate(Layer):
                 min_y = max(0, min(coords, key=itemgetter(1))[1] - self.pad_map[i])
 
                 # Crop the frame to the bounds of the landmark
-                cropped_lm = output_frame[min_y:max_y, min_x:max_x]
+                cropped_lm = frame[min_y:max_y, min_x:max_x]
                 cropped_mask = mask[min_y:max_y, min_x:max_x]
 
                 # Cut out the current landmark region and store it
@@ -419,29 +431,55 @@ class LayerSpatialLandmarkRelocate(Layer):
                     'original_center' : (original_cx, original_cy)
                 }
 
+                kernel_size = self._scale_radii(15, face_width, odd=True)
+                inpaint_radius = self._scale_radii(15, face_width)
+                feather_radius = self._scale_radii(6, face_width)
+
                 # ---------- Filling in cut out regions of the original frame ----------
                 # fill the original lm region in the output frame with empty pixels 
                 output_frame = cv.bitwise_and(src1=output_frame, src2=output_frame, mask=cv.bitwise_not(mask))
+                
+                # Original landmark mask
+                kernel = cv.getStructuringElement(
+                    cv.MORPH_ELLIPSE, (kernel_size, kernel_size)
+                )
 
-                # Fill landmark holes with navier-stokes inpainting;
-                # uses nearest-neighbor colour sampling to fill in gaps in an image
-                output_frame = cv.inpaint(output_frame, mask, 15, cv.INPAINT_NS)
+                # Larger region to reconstruct
+                reconstruction_mask = cv.dilate(
+                    mask, kernel, iterations=1
+                )
 
-                # dilate the landmark mask slightly, and blur around inpainted edges
-                kernel = np.ones((5,5), np.uint8)
-                dilated_mask = cv.dilate(mask, kernel, iterations=1)
-                dilated_mask = dilated_mask[..., np.newaxis]
+                # Inpaint the larger region
+                inpainted_frame = cv.inpaint(
+                    output_frame,
+                    reconstruction_mask,
+                    inpaint_radius,
+                    cv.INPAINT_TELEA
+                )
 
-                # blur the output frame around the inpainted landmarks
-                face_only = cv.bitwise_and(output_frame, output_frame, mask=fo_mask)
-                face_only = cv.GaussianBlur(face_only, (15,15), sigmaX=10)
+                # Create a compositing mask that remains fully opaque over
+                # the original landmark, then tapers toward the reconstruction edge.
+                distance_inside = cv.distanceTransform(
+                    reconstruction_mask,
+                    cv.DIST_L2,
+                    5
+                )
 
-                output_frame = np.where(dilated_mask == 255, face_only, output_frame)
-        
-        # Perform a weighted addition between the facial mean tone and the inpainted image
-        facial_mean = cv.mean(frame, mask=face_skin_mask)[:3]
-        f_skin_only = np.where(face_skin_mask[..., np.newaxis] == 255, facial_mean, frame).astype(np.uint8)
-        output_frame = cv.addWeighted(output_frame, 0.6, f_skin_only, 0.4, 0)
+                alpha = np.clip(
+                    distance_inside / feather_radius,
+                    0.0,
+                    1.0
+                )
+
+                # Ensure the original feature is completely replaced
+                alpha[mask == 255] = 1.0
+
+                alpha = alpha[..., np.newaxis]
+
+                output_frame = (
+                    alpha * inpainted_frame.astype(np.float32)
+                    + (1.0 - alpha) * output_frame.astype(np.float32)
+                ).clip(0, 255).astype(np.uint8)
         
         # Cloning rotated landmarks into their new positions on the underlying face
         for key, lm in landmarks.items():
