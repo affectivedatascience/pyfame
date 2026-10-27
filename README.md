@@ -44,7 +44,7 @@ pf.apply_layers(file_paths = files, layers = layer_recolour)
 ```bibtex
 @software{Bosman_PyFAME_the_Python_2026,
     author = {Bosman, Gavin and Livingstone, Steven R.},
-    month = Oct,
+    month = oct,
     title = {{PyFAME: the Python Facial Analysis and Manipulation Environment}},
     url = {https://github.com/affectivedatascience/pyfame},
     version = {2.0.0},
