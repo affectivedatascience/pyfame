@@ -60,7 +60,6 @@ src/pyfame/layer/manipulations/overlay/overlay_images/teardrop_1.png
 src/pyfame/layer/manipulations/spatial/__init__.py
 src/pyfame/layer/manipulations/spatial/_layer_spatial_grid_shuffle.py
 src/pyfame/layer/manipulations/spatial/_layer_spatial_landmark_relocate.py
-src/pyfame/layer/manipulations/spatial/face_anchors.py
 src/pyfame/layer/manipulations/stylise/__init__.py
 src/pyfame/layer/manipulations/stylise/_layer_stylise_pencil_sketch.py
 src/pyfame/layer/manipulations/stylise/_layer_stylise_point_light.py
@@ -75,4 +74,5 @@ src/pyfame/utils/__init__.py
 src/pyfame/utils/checks.py
 src/pyfame/utils/constants.py
 src/pyfame/utils/exceptions.py
+src/pyfame/utils/face_anchors.py
 src/pyfame/utils/general_utilities.py

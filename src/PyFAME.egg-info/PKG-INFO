@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: pyfame
-Version: 1.0.10
+Version: 2.0.0
 Summary: PyFAME: the Python Facial Analysis and Manipulation Environment
 Author-email: Gavin Bosman <gavin.bosman12@gmail.com>
 License:                      GNU GENERAL PUBLIC LICENSE
@@ -678,6 +678,7 @@ License:                      GNU GENERAL PUBLIC LICENSE
         Public License instead of this License.  But first, please read
         <https://www.gnu.org/licenses/why-not-lgpl.html>.
 Project-URL: Homepage, https://github.com/affectivedatascience/PyFAME
+Project-URL: Documentation, https://affectivedatascience.github.io/pyfame/
 Keywords: Facial Manipulation,Vision,Occlusion,Masking,Coloring,Affective Computing
 Classifier: Programming Language :: Python :: 3
 Classifier: Programming Language :: Python :: 3.10
@@ -708,64 +709,73 @@ Requires-Dist: mkdocstrings[python]>=0.25; extra == "docs"
 Provides-Extra: dev
 Requires-Dist: pyfame[docs]; extra == "dev"
 Requires-Dist: pytest>=8.0.0; extra == "dev"
-Requires-Dist: tox>=4.24.0; extra == "dev"
 Requires-Dist: build; extra == "dev"
 Requires-Dist: twine; extra == "dev"
 Dynamic: license-file
 
-![Docs](https://github.com/Gavin-Bosman/PyFAME/actions/workflows/deploy.yml/badge.svg)
-![PyPI Version](https://img.shields.io/pypi/v/Pyfame)
+[![Docs](https://github.com/affectivedatascience/PyFAME/actions/workflows/deploy.yml/badge.svg)](https://affectivedatascience.github.io/pyfame/)
+[![Tests](https://github.com/affectivedatascience/PyFAME/actions/workflows/tests.yml/badge.svg)](https://github.com/affectivedatascience/PyFAME/actions/workflows/tests.yml)
+[![PyPI Version](https://img.shields.io/pypi/v/pyfame)](https://pypi.org/project/pyfame/)
+[![PyPI Downloads](https://static.pepy.tech/personalized-badge/pyfame?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/pyfame)
 
+# PyFAME <img src="https://raw.githubusercontent.com/affectivedatascience/PyFAME/master/docs/assets/pyfame_logo.png" width="100" align="right" />
 
-# PyFAME: the Python Facial Analysis and Manipulation Environment
-<img src="https://raw.githubusercontent.com/affectivedatascience/PyFAME/master/docs/assets/pyfame_logo.png" width=300 />
+PyFAME - The Python Facial Analysis and Manipulation Environment - is an open-source Python toolbox for manipulating facial features in images and videos. It provides researchers with tools to modify specific facial regions, control how changes develop over time, and combine multiple effects within a single workflow. These tools make it easier to create consistent, reproducible experimental stimuli without requiring extensive programming experience. By simplifying the process of facial image and video manipulation, PyFAME helps researchers explore how different facial features influence human perception.
 
-PyFAME is a python package for dynamic region occlusion and skin colour modification of faces in video and images. Provides a range of tools for changing the colour of user-specified facial regions using industry-standard colour spaces (L*a*b, HSV, BGR), occlusion of user-defined facial regions (e.g., eyes, nose, mouth, hemi-face), and isolation of the head from background scene through video matting. Facial modifications can be further transitioned on and off through a range of timing functions (e.g., linear, sigmoid, Gaussian etc).
+PyFAME leverages the powerful FaceLandmarker solution from Google MediaPipe, which provides automated detection of 478 unique facial landmarks. By accessing and chaining together landmark indices to form complex paths, many complex image and video manipulations can be performed.
 
-PyFAME enables researchers to apply complex facial manipulations to just the face in dynamic video and still images scenes in several lines of code.
-Here is an example of PyFAME performing pixel-level modifications to create new videos from the original one:
+Here is an example of PyFAME performing pixel-level manipulations over video frames to create new ones:
 
-<img src="https://raw.githubusercontent.com/affectivedatascience/PyFAME/master/docs/assets/grid_display.png" width=400/>
+<img src="https://raw.githubusercontent.com/affectivedatascience/PyFAME/master/docs/assets/pyfame_gallery.webp" width=800 align="center"/>
 
 ## Statement of Need
 
-Currently, there are no available tools for performing these types of pixel-level operations over videos. Existing research has commonly used general image editing tools (such as Photoshop). However, these tools apply changes to the entire image, causing noticeable background artifacts. PyFAME provides users the ability to selectively modify specific regions of the face, for both static images and videos. Our package also seamlessly integrates temporal functions into it's video processing, allowing users to specify how and when pixel-level operations will be applied.
+Currently, there are no available tools for performing these types of pixel-level operations over videos. Existing research has commonly used general image editing tools (i.e. Photoshop), but these tools often require extensive training and rely on manual editing of video frames.
 
-## A Quick Example: 
+PyFAME provides users the ability to selectively modify specific regions of the face, in both static images and videos. Our package also seamlessly integrates temporal functions into it's video processing, allowing users to specify how and when pixel-level operations will be applied. These operations can be acheived with as little as 5 lines of code.
 
-```Python
+Furthermore, the JSON log file outputs are ingestible. This makes it much easier to create consistent, reproducible experimental stimuli without requiring extensie programming experience. By simplifying the process of facial image and video manipulation, PyFAME helps researchers explore how different facial features influence human perception.
+
+## Example: 
+As a quick example, this is the simplest way to set up your file system and to get processing facial manipulations with PyFAME:
+```python
 import pyfame as pf
 
-# pyfame.core functions are all exposed in the top-level import
-pf.occlude_face_region(...)
+# Create the necessary file system structure to load and organize data
+pf.make_paths()
 
-# Extra utility functions like the parameter display functions are 
-# available in pyfame.utils
-pf.utils.display_all_landmark_paths()
+# Get dataframe of file paths, pre-loaded with sample data
+files = pf.load_sample_data()
 
-# Specific commonly used utils submodules are exposed at the top level 
-# This includes all predefined constants, landmarks and timing functions
-pf.OCCLUSION_FILL_BAR
-pf.HEMI_FACE_LEFT_PATH
-pf.sigmoid()
+# Create your manipulation layer
+layer_recolour = pf.layer_colour_recolour()
+
+# Apply your layer to your file paths
+pf.apply_layers(file_paths = files, layers = layer_recolour)
 ```
 
-## Underlying Model
+## Citation
 
-MediaPipe's Face Mesh solution provides automated detection of 478 unique facial landmarks. By accessing the x-y pixel coordinates of these landmarks, many complex image and video manipulations can be performed. 
-For more on mediapipe, see [here](https://ai.google.dev/edge/mediapipe/solutions/guide)
+```bibtex
+@software{Bosman_PyFAME_the_Python_2026,
+    author = {Bosman, Gavin and Livingstone, Steven R.},
+    month = Oct,
+    title = {{PyFAME: the Python Facial Analysis and Manipulation Environment}},
+    url = {https://github.com/affectivedatascience/pyfame},
+    version = {2.0.0},
+    year = {2026}
+}
+```
 
 ## Documentation and Changelog
 
-This project maintains a changelog, following the format of [keep a changelog](https://keepachangelog.com/en/1.0.0/). This project also adheres to [semantic versioning](https://semver.org/spec/v2.0.0.html).
+To view our documentation, examples and tutorials, see [PyFAME Docs](https://affectivedatascience.github.io/pyfame/).
 
-To view our documentation, examples and tutorials, see [PyFAME Docs](https://gavin-bosman.github.io/PyFAME/).
+This project maintains a changelog, following the format of [keep a changelog](https://keepachangelog.com/en/1.0.0/). This project also adheres to [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Contributing
 
-PyFAME is a young project, and it is still far from perfect! If you have any ideas on how to improve the package please submit an inquiry and we will work on implementing it right away!
-
-Pull requests are always welcome. If you spot a mistake, error, or inefficiency within the source code, let us know!
+Please see the [contributing guide](https://github.com/affectivedatascience/pyfame/tree/master/.github/CONTRIBUTING.md)
 
 ## License
 
