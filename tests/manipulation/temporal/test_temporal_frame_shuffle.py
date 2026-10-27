@@ -163,7 +163,7 @@ def test_apply_temporal_shuffle_invalid_extension(file_paths_valid_file, tmp_pat
     invalid_file.touch()
 
     file_paths.loc[0, "Absolute Path"] = str(invalid_file)
-    file_paths.loc[0, "Relative Path"] = "raw/invalid.webp"
+    file_paths.loc[0, "Relative Path"] = "data/raw/invalid.webp"
 
     with pytest.raises(UnrecognizedExtensionError):
         apply_temporal_shuffle(file_paths)

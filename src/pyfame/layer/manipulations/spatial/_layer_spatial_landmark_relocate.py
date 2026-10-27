@@ -103,13 +103,20 @@ class RelocateParameters(BaseModel):
 
     @field_validator("landmark_relocate_specs")
     @classmethod
-    def check_spec_keys(cls, value):
+    def check_user_specs(cls, value):
         if value is not None:
             if not value:
                 raise ValueError("user_specs cannot be empty.")
             
-            if value is not None and any(key not in range(4) for key in value):
+            if any(key not in range(4) for key in value):
                 raise ValueError("user_specs keys must be integers in the range [0, 3].")
+
+            for i in value.keys():
+                spec = value[i]
+                anchor = spec.anchor
+
+                if not anchor in FaceAnchor:
+                    raise ValueError("user_specs must only contain valid FaceAnchor anchors.")
 
         return value
 

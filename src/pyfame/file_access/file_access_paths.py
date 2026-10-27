@@ -86,6 +86,11 @@ def load_user_data(data_folder_name:str = "data", include_folders:list[str] = ["
     ------
     OSError
         Given invalid folder names.
+
+    Notes
+    -----
+    - Relative file paths are relative to the current working directory,
+    not the data folder itself.
     """
     check_type(data_folder_name, [str])
     check_type(include_folders, [str], iterable=True)

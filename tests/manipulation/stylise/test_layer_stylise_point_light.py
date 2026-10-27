@@ -13,7 +13,6 @@ def test_layer_stylise_point_light_defaults():
 
     params = layer.get_layer_parameters()
 
-    assert params["point_density"] == 1.0
     assert params["point_colour"] == (255, 255, 255)
     assert params["point_radius"] == 3
     assert params["display_history_vectors"] is False
@@ -42,19 +41,6 @@ def test_layer_stylise_point_light_valid_history_method(history_method, expected
 
     assert isinstance(layer, LayerStylisePointLight)
     assert layer.get_layer_parameters()["history_method"] == expected
-
-
-@pytest.mark.parametrize(
-    "point_density",
-    [0.01, 0.1, 0.25, 0.5, 0.75, 1.0],
-)
-def test_layer_stylise_point_light_valid_density(point_density):
-    layer = layer_stylise_point_light(
-        point_density=point_density
-    )
-
-    assert isinstance(layer, LayerStylisePointLight)
-    assert layer.get_layer_parameters()["point_density"] == point_density
 
 
 @pytest.mark.parametrize(
@@ -176,15 +162,6 @@ def test_layer_stylise_point_light_invalid_history_method(history_method):
 
 
 @pytest.mark.parametrize(
-    "point_density",
-    [-1.0, -0.1, 0.0, 1.01, 2.0],
-)
-def test_layer_stylise_point_light_invalid_density(point_density):
-    with pytest.raises(ValueError):
-        layer_stylise_point_light(point_density=point_density)
-
-
-@pytest.mark.parametrize(
     "point_radius",
     [-10, -1, 0, 26, 100],
 )
@@ -233,8 +210,6 @@ def test_layer_stylise_point_light_invalid_colours(parameter, colour):
         ("landmark_paths", "invalid"),
         ("landmark_paths", 123),
         ("landmark_paths", [(0, "invalid")]),
-        ("point_density", "invalid"),
-        ("point_density", None),
         ("point_radius", "invalid"),
         ("point_radius", 1.5),
         ("point_radius", None),

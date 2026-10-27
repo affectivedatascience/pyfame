@@ -3,20 +3,23 @@
 [![PyPI Version](https://img.shields.io/pypi/v/pyfame)](https://pypi.org/project/pyfame/)
 [![PyPI Downloads](https://static.pepy.tech/personalized-badge/pyfame?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/pyfame)
 
-# PyFAME: the Python Facial Analysis and Manipulation Environment
-<img src="https://raw.githubusercontent.com/affectivedatascience/PyFAME/master/docs/assets/pyfame_logo.png" width=300 />
+# PyFAME <img src="https://raw.githubusercontent.com/affectivedatascience/PyFAME/master/docs/assets/pyfame_logo.png" width="100" align="right" />
 
-PyFAME is a python package for dynamic region occlusion and skin colour modification of faces in video and images. Provides a range of tools for changing the colour of user-specified facial regions using industry-standard colour spaces (L*a*b, HSV, BGR), occlusion of user-defined facial regions (e.g., eyes, nose, mouth, hemi-face), and isolation of the head from background scene through video matting. Facial modifications can be further transitioned on and off through a range of timing functions (e.g., linear, sigmoid, Gaussian etc).
+PyFAME - The Python Facial Analysis and Manipulation Environment - is an open-source Python toolbox for manipulating facial features in images and videos. It provides researchers with tools to modify specific facial regions, control how changes develop over time, and combine multiple effects within a single workflow. These tools make it easier to create consistent, reproducible experimental stimuli without requiring extensive programming experience. By simplifying the process of facial image and video manipulation, PyFAME helps researchers explore how different facial features influence human perception.
 
-PyFAME leverages the powerful Face Mesh solution from MediaPipe, which provides automated detection of 478 unique facial landmarks. By accessing the x-y pixel coordinates of these landmarks, many complex image and video manipulations can be performed.
+PyFAME leverages the powerful FaceLandmarker solution from Google MediaPipe, which provides automated detection of 478 unique facial landmarks. By accessing and chaining together landmark indices to form complex paths, many complex image and video manipulations can be performed.
 
-Here is an example of PyFAME performing pixel-level modifications to create new videos from the original one:
+Here is an example of PyFAME performing pixel-level manipulations over video frames to create new ones:
 
-<img src="https://raw.githubusercontent.com/affectivedatascience/PyFAME/master/docs/assets/grid_display.png" width=400/>
+<img src="https://raw.githubusercontent.com/affectivedatascience/PyFAME/master/docs/assets/pyfame_gallery.webp" width=800 align="center"/>
 
 ## Statement of Need
 
-PyFAME - The Python Facial Analysis and Manipulation Environment - is an open-source Python toolbox for manipulating facial features in images and videos. It provides researchers with tools to modify specific facial regions, control how changes develop over time, and combine multiple effects within a single workflow. These tools make it easier to create consistent, reproducible experimental stimuli without requiring extensive programming experience. By simplifying the process of facial image and video manipulation, PyFAME helps researchers explore how different facial features influence human perception.
+Currently, there are no available tools for performing these types of pixel-level operations over videos. Existing research has commonly used general image editing tools (i.e. Photoshop), but these tools often require extensive training and rely on manual editing of video frames.
+
+PyFAME provides users the ability to selectively modify specific regions of the face, in both static images and videos. Our package also seamlessly integrates temporal functions into it's video processing, allowing users to specify how and when pixel-level operations will be applied. These operations can be acheived with as little as 5 lines of code.
+
+Furthermore, the JSON log file outputs are ingestible. This makes it much easier to create consistent, reproducible experimental stimuli without requiring extensie programming experience. By simplifying the process of facial image and video manipulation, PyFAME helps researchers explore how different facial features influence human perception.
 
 ## Example: 
 As a quick example, this is the simplest way to set up your file system and to get processing facial manipulations with PyFAME:
@@ -34,6 +37,19 @@ layer_recolour = pf.layer_colour_recolour()
 
 # Apply your layer to your file paths
 pf.apply_layers(file_paths = files, layers = layer_recolour)
+```
+
+## Citation
+
+```bibtex
+@software{Bosman_PyFAME_the_Python_2026,
+    author = {Bosman, Gavin and Livingstone, Steven R.},
+    month = Oct,
+    title = {{PyFAME: the Python Facial Analysis and Manipulation Environment}},
+    url = {https://github.com/affectivedatascience/pyfame},
+    version = {2.0.0},
+    year = {2026}
+}
 ```
 
 ## Documentation and Changelog

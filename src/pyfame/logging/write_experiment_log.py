@@ -76,16 +76,16 @@ def write_experiment_log(layers:list[Layer] | Layer, timestamp_id:str, working_d
     Raises
     ------
     OSError
-        If unable to locate working_director_path, or 
+        If unable to locate working_directory_path, or 
         working_directory_path is an invalid path string.
     
-    ValidationError
+    ValueError
         If any of the parameter data pass is not JSON
         serializable.
     """
     
     if not os.path.isdir(working_directory_path):
-        raise OSError(message=f"Unable to locate the input {os.path.basename(working_directory_path)} directory. Please call make_output_paths() to initialise the working directory.")
+        raise OSError(f"Unable to locate the input {os.path.basename(working_directory_path)} directory. Please call make_output_paths() to initialise the working directory.")
 
     # Creating a unique file identifier
     log_creation_timestamp = datetime.now().isoformat(timespec='seconds')

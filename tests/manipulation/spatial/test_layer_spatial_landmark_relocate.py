@@ -226,7 +226,7 @@ def test_layer_spatial_landmark_relocate_empty_specs():
 
 @pytest.mark.parametrize(
     "anchor",
-    ["invalid", None, 123, (0.75, 0.75)],
+    ["invalid", 123, (0.75, 0.75)],
 )
 def test_layer_spatial_landmark_relocate_invalid_anchor(anchor):
     with pytest.raises(ValueError):

@@ -11,8 +11,6 @@ recursive-include src/pyfame/layer/manipulations/overlay/overlay_images *.png *.
 prune data
 prune scripts
 prune docs
-prune docs_depricated
 prune tests
-prune node_modules
-prune .tox
-prune venv311
+prune .venv
+prune .vscode

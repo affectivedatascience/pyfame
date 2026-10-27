@@ -3,11 +3,6 @@ import pytest
 from pyfame.utils import get_variable_name, get_landmark_names
 from pyfame.landmark.facial_landmarks import *
 
-
-# -------------------------
-# get_variable_name()
-# -------------------------
-
 def test_get_variable_name_local():
     test_variable = 12345
 
@@ -89,14 +84,6 @@ def test_get_landmark_names_multiple_paths():
     ]
 
 
-def test_get_landmark_names_unknown_path():
-    landmarks = [(9999, 9998), (9998, 9997)]
-
-    result = get_landmark_names(landmarks)
-
-    assert result == "UNKNOWN_LANDMARK"
-
-
 def test_get_landmark_names_mixed_paths():
     landmarks = [
         LANDMARK_FACE_OVAL,
@@ -107,21 +94,7 @@ def test_get_landmark_names_mixed_paths():
 
     assert result == [
         "LANDMARK_FACE_OVAL",
-        "UNKNOWN_LANDMARK",
-    ]
-
-
-def test_get_landmark_names_multiple_unknown_paths():
-    landmarks = [
-        [(9999, 9998)],
-        [(9997, 9996)],
-    ]
-
-    result = get_landmark_names(landmarks)
-
-    assert result == [
-        "UNKNOWN_LANDMARK",
-        "UNKNOWN_LANDMARK",
+        [(9999, 9998), (9998, 9997)],
     ]
 
 

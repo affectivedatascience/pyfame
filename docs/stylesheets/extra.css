@@ -21,54 +21,157 @@
     --md-typeset-a-color: #22B1B5;
 }
 
+
 /* ==========================================================================
    PyFAME Home Page
    ========================================================================== */
 
-.pyfame-hero {
-    display: flex;
+/* Installation command eyebrow */
+
+.pyfame-install {
+    display: inline-flex;
     align-items: center;
-    justify-content: center;
-    gap: 4rem;
-    margin: 0.75rem auto 0.5rem;
+    gap: 0.9rem;
+
+    padding: 0.5rem 0.85rem;
+    margin-bottom: 1.5rem;
+
+    border: 1px solid rgba(34, 177, 181, 0.5);
+    border-radius: 8px;
+
+    background: rgba(34, 177, 181, 0.08);
 }
 
+.pyfame-terminal-icon {
+    color: #22B1B5;
+    font-family: monospace;
+    font-size: 0.9rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.pyfame-install code {
+    color: inherit;
+    font-family: monospace;
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+    background: transparent;
+    padding: 0;
+}
+
+/* Widen the content container only on the homepage */
+
+body:has(.pyfame-hero) .md-main__inner.md-grid {
+    max-width: 1600px;
+}
+
+body:has(.pyfame-hero) .md-content {
+    max-width: none;
+}
+
+body:has(.pyfame-hero) .md-content__inner {
+    max-width: none;
+}
+
+/* Hero layout */
+
+.pyfame-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 50fr) minmax(0, 50fr);
+    align-items: start;
+    gap: 3rem;
+    margin: 0 auto 2rem;
+}
+
+.pyfame-hero .headerlink {
+    display: none;
+}
+
+/* Left column */
+
 .pyfame-hero-content {
-    flex: 1;
-    max-width: 700px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+
+    gap: 1.5rem;
+
+    width: 100%;
+    max-width: 640px;
+    min-width: 0;
+    margin-inline: auto;
+    padding-inline: 1.5rem;
+    box-sizing: border-box;
 }
 
 .pyfame-hero-content h1 {
-    margin-top: 0;
+    font-size: clamp(2.5rem, 3.5vw, 3.75rem);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
 }
 
-.pyfame-hero-logo {
-    flex: 0 0 auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+/* Dark mode */
+[data-md-color-scheme="slate"] .pyfame-hero-content h1 {
+    color: #FFFFFF;
 }
 
-.pyfame-hero-logo img {
-    width: 280px;
-    max-width: 100%;
-    height: auto;
+/* Light mode */
+[data-md-color-scheme="default"] .pyfame-hero-content h1 {
+    color: #1E2129;
 }
 
+.pyfame-hero-content > h1,
+.pyfame-hero-content > .pyfame-install,
+.pyfame-hero-content > .pyfame-hero-description,
+.pyfame-hero-content > .pyfame-hero-buttons {
+    margin: 0;
+}
 
-/* Hero navigation buttons */
+/* Navigation buttons */
 
 .pyfame-hero-buttons {
     display: flex;
-    justify-content: center;
+    flex-wrap: wrap;
+    justify-content: flex-start;
     align-items: center;
-    gap: 1rem;
-    margin: 0.5rem auto 1.5rem;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
 }
 
 .pyfame-hero-buttons .md-button {
-    border-radius: 2.0rem;
+    border-radius: 2rem;
+    margin: 0;
+    white-space: nowrap;
 }
+
+/* Right column */
+
+.pyfame-hero-gallery {
+    width: 100%;
+    max-width: 650px;
+    justify-self:center;
+}
+
+.pyfame-hero-gallery a {
+    display: block;
+}
+
+.pyfame-hero-gallery img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 12px;
+    transition: transform 0.25s ease;
+}
+
+.pyfame-hero-gallery img:hover {
+    transform: scale(1.015);
+}
+
+/* Feature card icons */
 
 .home-card-icon {
     width: 1.5rem;
@@ -78,25 +181,36 @@
     margin-right: 0.3rem;
 }
 
+body:has(.pyfame-hero) .grid.cards > ul > li {
+    border-radius: 12px;
+    overflow: hidden;
+}
+
 [data-md-color-scheme="slate"] .home-card-icon {
     filter: invert(1);
 }
 
 /* Responsive layout */
 
-@media screen and (max-width: 44.984375em) {
+@media screen and (max-width: 900px) {
     .pyfame-hero {
-        flex-direction: column-reverse;
-        gap: 1.5rem;
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        margin: 1.5rem auto 2rem;
+    }
+
+    .pyfame-hero-content {
         text-align: center;
     }
 
-    .pyfame-hero-logo img {
-        width: 200px;
+    .pyfame-hero-buttons {
+        justify-content: center;
     }
 
-    .pyfame-hero-buttons {
-        flex-wrap: wrap;
+    .pyfame-hero-gallery {
+        width: 100%;
+        max-width: 650px;
+        margin: 0 auto;
     }
 }
 

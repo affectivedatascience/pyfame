@@ -52,21 +52,21 @@ def test_layer_occlusion_noise_valid_pixel_size(pixel_size):
 
 
 @pytest.mark.parametrize(
-    "mean",
+    "gaussian_mean",
     [-10.0, 0.0, 10.0],
 )
-def test_layer_occlusion_noise_valid_mean(mean):
-    layer = layer_occlusion_noise(gaussian_mean=mean)
+def test_layer_occlusion_noise_valid_mean(gaussian_mean):
+    layer = layer_occlusion_noise(gaussian_mean=gaussian_mean)
 
     assert isinstance(layer, LayerOcclusionNoise)
 
 
 @pytest.mark.parametrize(
-    "standard_deviation",
+    "gaussian_std",
     [0.0, 0.5, 1.0, 10.0],
 )
-def test_layer_occlusion_noise_valid_standard_deviation(standard_deviation):
-    layer = layer_occlusion_noise(gaussian_std=standard_deviation)
+def test_layer_occlusion_noise_valid_standard_deviation(gaussian_std):
+    layer = layer_occlusion_noise(gaussian_std=gaussian_std)
 
     assert isinstance(layer, LayerOcclusionNoise)
 
@@ -132,12 +132,12 @@ def test_layer_occlusion_noise_invalid_pixel_size(pixel_size):
 
 
 @pytest.mark.parametrize(
-    "standard_deviation",
+    "gaussian_std",
     [-0.1, -1.0],
 )
-def test_layer_occlusion_noise_invalid_standard_deviation(standard_deviation):
+def test_layer_occlusion_noise_invalid_standard_deviation(gaussian_std):
     with pytest.raises(ValueError):
-        layer_occlusion_noise(gaussian_std=standard_deviation)
+        layer_occlusion_noise(gaussian_std=gaussian_std)
 
 
 @pytest.mark.parametrize(
@@ -157,8 +157,8 @@ def test_layer_occlusion_noise_invalid_random_seed(random_seed):
         ("noise_probability", "invalid"),
         ("pixel_size", "invalid"),
         ("pixel_size", 3.5),
-        ("mean", "invalid"),
-        ("standard_deviation", "invalid"),
+        ("gaussian_mean", "invalid"),
+        ("gaussian_std", "invalid"),
         ("random_seed", "invalid"),
         ("random_seed", 1.5),
         ("landmark_paths", "invalid"),

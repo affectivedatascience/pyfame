@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 import pandas as pd
 import pytest
 import shutil
@@ -52,7 +53,7 @@ def valid_face_video() -> Path:
     return ASSETS_DIR / "valid_face.mp4"
 
 @pytest.fixture
-def file_paths_valid_file(valid_face_video, data_paths) -> pd.DataFrame:
+def file_paths_valid_file(tmp_path, valid_face_video, data_paths) -> pd.DataFrame:
     """Creates valid dir structure and returns a valid PyFAME file_paths object."""
     destination = data_paths["raw"] / valid_face_video.name
     shutil.copy(valid_face_video, destination)
@@ -63,7 +64,7 @@ def file_paths_valid_file(valid_face_video, data_paths) -> pd.DataFrame:
                 destination
             ],
             "Relative Path" : [
-                destination.relative_to(data_paths["data"])
+                destination.relative_to(tmp_path)
             ]
         }
     )
@@ -85,3 +86,45 @@ def landmark_paths():
         [(0, 1), (1, 2), (2, 0)],
         [(3, 4), (4, 5), (5, 3)],
     ]
+
+
+@pytest.fixture
+def valid_log_config():
+    return {
+        "schema_version": "1.0",
+        "timestamp": "2026-10-26T15:42:09",
+        "layers": {
+            "LayerMask": {
+                "onset_time_msec": None,
+                "offset_time_msec": None,
+                "rise_time_msec": 500.0,
+                "fall_time_msec": 500.0,
+                "rise_curve": "timing_constant",
+                "fall_curve": "timing_constant",
+                "rise_curve_kwargs": None,
+                "fall_curve_kwargs": None,
+                "landmark_paths": [
+                    "LANDMARK_NOSE",
+                    "LANDMARK_BOTH_EYE_REGIONS",
+                    "LANDMARK_MOUTH"
+                ],
+                "background_colour": [
+                    0,
+                    0,
+                    0
+                ]
+            }
+        }
+    }
+
+
+@pytest.fixture
+def valid_log_file(tmp_path: Path, valid_log_config):
+    log_path = tmp_path / "experiment_log.json"
+
+    log_path.write_text(
+        json.dumps(valid_log_config),
+        encoding="utf-8"
+    )
+
+    return str(log_path)

@@ -8,34 +8,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Planned for [2.1.0] : LayerOverlay - Custom user object overlay files, combined with intuitive placement with FaceAnchor
 - Planned for [2.1.0] : LayerStylisePointLight - Reworked landmark to point light conversion with point density control
 - Planned for [2.1.0] : LayerSpatialLandmarkRelocate - More landmark support, addition of pupil relocation within sclera
-- Planned for [3.0.0] : Depth-aware manipulations using 3d depth map estimation models
+- Planned for [3.0.0] : Depth-aware manipulations using 2D depth map estimation models
 
 ## [2.0.0] 2026-11-10
+- A wide breadth of testing of existing features and trialing of new features has led to many major manipulation layer and core API refactorings, ramping up for the version 2.0.0 release. As the sole developer thusfar, I had accidentally misunderstood the requirements of the semantic versioning for the package, resulting in backwards incompatible changes being introduced into later v1.0.0 patches. As such I will be collecting all of the updated features and new capabilities into the v2.0.0 release, tightly adhering to the rules of semantic versioning going forward. I thank you all for your understanding.
+
+- With that being said, v2.0.0 brings a vast set of improvements, optimizations, new additions and API changes detailed below:
 
 ### Added
-- Added asymetric timing curve capabilities for more precise temporal control
-- Added pencil sketch stylistic manipulation
-- Added `relative` vs `absolute` scale options for colouring family of layers
-- Added several new landmark sets including `LANDMARK_LIPS`, `LANDMARK_LIPS_INNER_CONTOUR`, `LANDMARK_LIPS_OUTER_CONTOUR`, `LANDMARK_LEFT_EYEBROW` and `LANDMARK_RIGHT_EYEBROW`
-- `make_paths` functionality was too broad, and has now been divided into three methods: `make_paths`, `load_user_data` and `load_sample_data`. Previously `make_paths` constructed the required directory structure AND returned a DataFrame of file paths, whereas now those two functionalities have been split. `make_paths` now is called only once after first installing PyFAME, setting up the necessary data folder in your working directory. The primary file readin method is now `load_user_data` which will return a DataFrame of file paths like before. Optionally users can also use newly packaged sample data by calling `load_sample_data`.
-- The documentation site has been completely reworked with mkdoctrings. The site is now automatically updated alongside the code definitions.
+- Architectural additions:
+    - Timing curves have been reworked to be asymetric and dual-sided, allowing for more precise temporal control of onsets, offsets, rise and fall curves.
+    - `make_paths` functionality was too broad, and has now been divided into three methods: `make_paths`, `load_user_data` and `load_sample_data`. Previously `make_paths` constructed the required directory structure AND returned a DataFrame of file paths, whereas now those two functionalities have been split. `make_paths` now is called only once after first installing PyFAME, setting up the necessary data folder in your working directory. The primary file readin method is now `load_user_data` which will return a DataFrame of file paths like before. Optionally users can also use newly packaged sample data by calling `load_sample_data`.
+    - Added several new landmark sets including `LANDMARK_LIPS`, `LANDMARK_LIPS_INNER_CONTOUR`, `LANDMARK_LIPS_OUTER_CONTOUR`, `LANDMARK_LEFT_EYEBROW` and `LANDMARK_RIGHT_EYEBROW`
+- API additions:
+    - Added pupil overlay, in order to simulate realistic pupil dilation. The overlayed dilated pupil size is by default set to 0.25 the scleral width, based on the literature supporting typical dilated pupil diameter to eye-width ratios in adults of [0.130-0.300]. This scale denoted by the parameter `pupil_scale_factor` can also be supplied by the user, and is scaled by the timing functions weight in order to generate realistic temporal pupil dilations.
+    - Implemented the pencil sketch stylistic manipulation, which leverages edge/contour detection with clever thresholding and morphological operations to make the subject appear as an ink/pencil sketch.
+    
+    - The colouring family of layers previously used the `magnitude` parameter to scale the manipulation to the absolute value range of the specific quality being manipulated (typically 0-255). All three colour layers now take a scale specifying parameter, one of `relative` vs `absolute`, with the relative scaling computing the magnitude of change based on the difference between the current mean value and the max in the range, and absolute scaling behaving the same as the original implementation, scaling to the full 0-255 value range.
 
 ### Changed
--  Expanded parametric control and redesigned for ease of use: `layer_spatial_grid_shuffle`, `layer_spatial_landmark_relocate` and `layer_stylise_point_light`
-- `layer_spatial_landmark_relocate` now takes in a parameter `landmark_relocate_specs`, which is a dictionary of integer ids and `LandmarkRelocateSpec` objects. 
-    - `LandmarkRelocateSpec` is a class defining cannonical facial locations, making it much simpler to define the intended relocation position when using layer_spatial_landmark_relocate
+- `LayerSpatialLandmarkRelocate` was reworked for ease of specifying relocated landmarks. The class now has an additional pydantic model `LandmarkRelocateSpec`, representing a single landmark relocation specification. Each relocation specification takes in a `FaceAnchor` enum value, which represents relative facial positions in the subject-space, normalised to [0,1] and scaled to the subjects facial width. Furthermore, each relocation specification can take optional rotation and translation parameters. As such, users now specify the locations of the cut out landmarks by passing a dict of `LandmarkRelocateSpec`, with keys [0-4] representing a specific landmark in the set of [left eye and brow, right eye and brow, nose, mouth].
+- `LayerSpatialGridShuffle` was expanded on and reworked, now adding in grid cell overlap thresholds, discluding grid cells that mostly contained background pixels, and adding landmark support so now the grid shuffle can be restricted to specific facial regions instead of only applying to the full face oval. The previous local shuffling logic was extremely fragile and not sustainable going forward, so instead the shuffle_method `cyclic_shift` and parameter `cyclic_shift_amount` have been implemented, allowing for a clockwise rotation of grid cells along each row, allowing users to shuffle cells more precisely. As of now, the cells only shuffle clockwise, but a shuffle direction parameter is planned for future releases. Lastly, the parameter `grid_dimensions` has been added as a more intuitive alternative to `grid_square_size`. Both parameters can still be passed, with the layer prioritizing `grid_dimensions` when it is present.
+- Similarly, `LayerStylisePointLight`s precise landmark selection feature was very fragile, and relied on users having knowledge of mediapipe FaceLandmarker landmark indices, so it, along with the `point_density` parameter has been scrapped as of now. Instead of drawing every point within a landmark set, the layer now generates outputs closer to PLD's seen in the literature by only drawing the sparse landmark boundary.
+- The unique timestamp-named output folders for PyFAMEs output data have been reworked to include microseconds, as testing revealed that in paralellized pipelines, it was possible for the millisecond dependent timestamps to be duplicated, which was resulting in outputs being overwritten and lost.
+- PyFAME's documentation site has been completely reworked, ditching the previous VitePress architecture and node dependencies for the more lightweight and scalable combination of MKDocs Material and MKDocstrings. The site is now automatically generated and updated based on the github codebase, populating package descriptions from the codes docstrings. A variety of useful tutorials have been implemented to ease new users into developing their own facial manipulation pipelines.
+- Lastly, a fully revised test suite has been implemented, reflecting the alpha-v1.0.0 layer architectural changes and the changes detailed above. The suite is currently tested across Python versions 3.9-3.13, with later versions planned in the near future.
 
 ### Removed
-- VitePress dev dependency
+- VitePress and Node dependencies removed
 
 ## [1.0.0] 2025-10-02
 
 ### Added
 
-- Major revisions and changes to the packages architecture over the last several months. We wanted to transition 
-into a more modular, and more readable structure for applying PyFAME's manipulations. 
-- Reframed manipulation functions as manipulation `Layer` instances. Each manipulation layer comes paired with a 
-factory function of the same name, so that users don't have to deal with complex object-oriented programming paradigms.
+- Major revisions and changes to the packages architecture over the last several months. We wanted to transition into a more modular, and more readable structure for applying PyFAME's manipulations. 
+- Reframed manipulation functions as manipulation `Layer` instances. Each manipulation layer comes paired with a factory function of the same name, so that users don't have to deal with complex object-oriented programming paradigms.
 - We also aimed to simplify the process of selecting and passing files to the manipulations. As such, PyFAME now uses a single top-level `make_paths()` method, which takes in a directory in your current working folder, and sets up some scaffolded subdirectories to make reading, writing and logging image and video files much simpler. 
     - By default, PyFAME will always try to create a new directory called `data`, but users can provide any location they would like the working folder to be written too. Inside this working folder `make_paths()` creates several subdirectories: `raw`, `processed`, `logs` and `analysis`. 
     - The `raw` and `processed` directories are where the raw image or video files, and the processed image or video files are read, and written to respectively. For each processing session, a uniquely timestamp-named folder is created under `processed/`, and it will contain all of the processed files from that specific session.
